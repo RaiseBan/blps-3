@@ -29,26 +29,33 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers("/", "/static/**", "/index.html").permitAll()
-
-
-                        .requestMatchers("/api/labels/**").authenticated()
-                        .requestMatchers("/api/coordinates/**").authenticated()
-                        .requestMatchers("/api/albums/**").authenticated()
-                        
+//                        .requestMatchers("/", "/static/**", "/index.html").permitAll()
+//
+//
+//                        .requestMatchers("/api/labels/**").authenticated()
+//                        .requestMatchers("/api/coordinates/**").authenticated()
+//                        .requestMatchers("/api/albums/**").authenticated()
+//
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/ws/music/**").permitAll()
-                        .requestMatchers("/ws/admin/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/music").permitAll()
-                        .requestMatchers("/api/music/**").authenticated()
-                        .requestMatchers("/api/import-history").authenticated()
-                        .requestMatchers("/api/v1/special/**").permitAll()
-                        .requestMatchers("/api/v1/special/add-single").authenticated()
-                        .requestMatchers("/api/v1/special/remove-participant").authenticated()
+                        .requestMatchers("/redirect/**").permitAll()
+                        .requestMatchers("/").permitAll()
+//                        .requestMatchers("/ws/music/**").permitAll()
+//                        .requestMatchers("/ws/admin/**").permitAll()
+//                        .requestMatchers(HttpMethod.GET, "/api/music").permitAll()
+//                        .requestMatchers("/api/music/**").authenticated()
+//                        .requestMatchers("/api/import-history").authenticated()
+//                        .requestMatchers("/api/v1/special/**").permitAll()
+//                        .requestMatchers("/api/v1/special/add-single").authenticated()
+//                        .requestMatchers("/api/v1/special/remove-participant").authenticated()
+                        .requestMatchers("/api/our-campaigns").authenticated()
+                        .requestMatchers("/api/our-campaigns/**").hasRole("ADMIN")
+                        .requestMatchers("/api/their-campaigns/**").hasRole("ADMIN")
 
-                        .requestMatchers("/api/v1/auth/verify-token").authenticated()
-                        .requestMatchers("/api/admin-requests/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin-requests/request").hasAuthority("ROLE_USER")
+
+
+
+//                        .requestMatchers("/api/admin-requests/**").hasRole("ADMIN")
+//                        .requestMatchers("/api/admin-requests/request").hasAuthority("ROLE_USER")
                         
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session

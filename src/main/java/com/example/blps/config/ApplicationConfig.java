@@ -4,7 +4,10 @@ import com.example.blps.repository.auth.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -19,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.format.DateTimeFormatter;
 
 @Configuration
 @RequiredArgsConstructor
@@ -81,6 +85,17 @@ public class ApplicationConfig {
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         return objectMapper;
+    }
+
+    @Configuration
+    public class DateTimeConfig {
+        @Bean
+        public Jackson2ObjectMapperBuilderCustomizer jsonCustomizer() {
+            return builder -> {
+                builder.serializers(new LocalDateSerializer(DateTimeFormatter.ISO_DATE));
+                builder.deserializers(new LocalDateDeserializer(DateTimeFormatter.ISO_DATE));
+            };
+        }
     }
 
 }
