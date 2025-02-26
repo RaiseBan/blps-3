@@ -1,7 +1,10 @@
 package com.example.blps.controllers;// TheirCampaignController.java
+import com.example.blps.dto.data.TheirCampaignRequest;
+import com.example.blps.errorHandler.NotFoundException;
 import com.example.blps.model.dataEntity.TheirCampaign;
 import com.example.blps.service.data.TheirCampaignService;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,25 +34,43 @@ public class TheirCampaignController {
     }
 
     @PostMapping
-    public ResponseEntity<TheirCampaign> create(@Valid @RequestBody TheirCampaign campaign) {
+    public ResponseEntity<TheirCampaign> create(@Valid @RequestBody TheirCampaignRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(campaignService.createCampaign(campaign));
+                .body(campaignService.createCampaign(request));
     }
 
+    // TheirCampaignController.java
     @PutMapping("/{id}")
-    public ResponseEntity<TheirCampaign> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
-            @Valid @RequestBody TheirCampaign campaign
+            @Valid @RequestBody TheirCampaignRequest request
     ) {
-        return campaignService.updateCampaign(id, campaign)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            TheirCampaign updated = campaignService.updateCampaign(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.badRequest().body("Validation error: " + ex.getMessage());
+        }catch (NotFoundException ex) {
+            ex.printStackTrace();
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{id}/toggle-status")
+    public ResponseEntity<Void> toggleStatus(@PathVariable Long id) {
+        campaignService.toggleStatus(id);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        return campaignService.deleteCampaign(id)
-                ? ResponseEntity.noContent().build()
-                : ResponseEntity.notFound().build();
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        try {
+            return campaignService.deleteCampaign(id)
+                    ? ResponseEntity.noContent().build()
+                    : ResponseEntity.notFound().build();
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ex.getMessage());
+        }
     }
 }

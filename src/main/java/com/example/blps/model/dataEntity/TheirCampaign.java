@@ -1,12 +1,7 @@
 package com.example.blps.model.dataEntity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.FutureOrPresent;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,19 +18,30 @@ public class TheirCampaign {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
+    @NotBlank(message = "Partner name is required")
+    @Column(nullable = false)
     private String partnerName;
 
-    @URL
+    @URL(message = "Invalid URL format")
+    @Column(nullable = false)
     private String imageUrl;
 
-    @FutureOrPresent
+    @NotNull(message = "Start date is required")
+    @FutureOrPresent(message = "Start date must be today or in the future")
+    @Column(nullable = false)
     private LocalDate startDate;
 
+    @NotNull(message = "End date is required")
+    @Future(message = "End date must be in the future")
+    @Column(nullable = false)
     private LocalDate endDate;
 
-    @AssertTrue
-    private boolean isPeriodValid() {
-        return endDate == null || !endDate.isBefore(startDate);
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false) // Статус нельзя менять напрямую
+    private CampaignStatus status;
+
+    @AssertTrue(message = "End date must be at least one day after start date")
+    public boolean isEndDateValid() {
+        return endDate.isAfter(startDate.plusDays(1));
     }
 }
