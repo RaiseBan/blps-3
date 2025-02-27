@@ -110,6 +110,13 @@
             <version>31.1-jre</version>
         </dependency>
 
+<!--        reports-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.9.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

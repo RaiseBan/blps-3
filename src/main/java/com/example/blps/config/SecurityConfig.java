@@ -50,6 +50,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/our-campaigns").authenticated()
                         .requestMatchers("/api/our-campaigns/**").hasRole("ADMIN")
                         .requestMatchers("/api/their-campaigns/**").hasRole("ADMIN")
+                        .requestMatchers("/api/reports/campaigns").hasRole("ADMIN")
+                        .requestMatchers("/api/reports/campaigns/**").hasRole("ADMIN")
 
 
 

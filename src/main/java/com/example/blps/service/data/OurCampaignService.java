@@ -1,5 +1,6 @@
 package com.example.blps.service.data;
 
+import com.example.blps.dto.data.CampaignReportDTO;
 import com.example.blps.dto.data.OurCampaignDTO;
 import com.example.blps.dto.data.OurCampaignRequest;
 import com.example.blps.model.dataEntity.Metric;
@@ -79,4 +80,37 @@ public class OurCampaignService {
         existing.setBudget(request.getBudget());
         existing.setPlacementUrl(request.getPlacementUrl());
     }
+
+
+    public List<CampaignReportDTO> getCampaignsReportData() {
+        return ourCampaignRepository.findAll().stream()
+                .map(this::convertToReportDTO)
+                .collect(Collectors.toList());
+    }
+    public Optional<CampaignReportDTO> getCampaignReportData(Long id) {
+        return ourCampaignRepository.findById(id)
+                .map(this::convertToReportDTO);
+    }
+
+
+
+    private CampaignReportDTO convertToReportDTO(OurCampaign campaign) {
+        CampaignReportDTO dto = new CampaignReportDTO();
+        dto.setCampaignName(campaign.getCampaignName());
+        dto.setBudget(campaign.getBudget());
+
+        Metric metric = campaign.getMetric();
+        if (metric != null) {
+            dto.setClickCount(metric.getClickCount());
+            dto.setCtr(metric.getCtr());
+            dto.setConversionRate(metric.getConversionRate());
+            dto.setRoi(metric.getRoi());
+        }
+
+        return dto;
+    }
+
+
+
+
 }
