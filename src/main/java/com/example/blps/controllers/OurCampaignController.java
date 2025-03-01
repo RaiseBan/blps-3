@@ -28,43 +28,25 @@ public class OurCampaignController {
 
     @GetMapping("/{id}")
     public ResponseEntity<OurCampaignDTO> getById(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(campaignService.getCampaignById(id)
-                    .orElseThrow(() -> new RuntimeException("Campaign not found")));
-        } catch (RuntimeException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(campaignService.getCampaignById(id));
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody OurCampaignRequest request) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(campaignService.createCampaign(request));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ex.getMessage());
-        }
+    public ResponseEntity<OurCampaignDTO> create(@Valid @RequestBody OurCampaignRequest request) {
+        OurCampaignDTO createdCampaign = campaignService.createCampaign(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdCampaign);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<OurCampaignDTO> update(
             @PathVariable Long id,
             @Valid @RequestBody OurCampaignRequest request) {
-        try {
-            return ResponseEntity.ok(campaignService.updateCampaign(id, request));
-        } catch (RuntimeException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(campaignService.updateCampaign(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        try {
-            campaignService.deleteCampaign(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        campaignService.deleteCampaign(id);
+        return ResponseEntity.noContent().build();
     }
 }

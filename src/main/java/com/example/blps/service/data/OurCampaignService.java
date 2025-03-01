@@ -3,10 +3,12 @@ package com.example.blps.service.data;
 import com.example.blps.dto.data.CampaignReportDTO;
 import com.example.blps.dto.data.OurCampaignDTO;
 import com.example.blps.dto.data.OurCampaignRequest;
+import com.example.blps.errorHandler.ConflictException;
+import com.example.blps.errorHandler.NotFoundException;
 import com.example.blps.model.dataEntity.Metric;
 import com.example.blps.model.dataEntity.OurCampaign;
 import com.example.blps.repository.data.OurCampaignRepository;
-import com.example.blps.utils.CampaignMapper;
+import com.example.blps.controllers.utils.CampaignMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,14 +31,15 @@ public class OurCampaignService {
                 .collect(Collectors.toList());
     }
 
-    public Optional<OurCampaignDTO> getCampaignById(Long id) {
+    public OurCampaignDTO getCampaignById(Long id) {
         return ourCampaignRepository.findById(id)
-                .map(campaignMapper::toDTO);
+                .map(campaignMapper::toDTO)
+                .orElseThrow(() -> new NotFoundException("Campaign not found"));
     }
 
     public OurCampaignDTO createCampaign(OurCampaignRequest request) {
         if (ourCampaignRepository.existsByCampaignName(request.getCampaignName())) {
-            throw new IllegalArgumentException("Campaign name already exists");
+            throw new ConflictException("Campaign name already exists");
         }
 
         OurCampaign newCampaign = campaignMapper.toEntity(request);
@@ -48,7 +51,7 @@ public class OurCampaignService {
 
     public OurCampaignDTO updateCampaign(Long id, OurCampaignRequest request) {
         OurCampaign existingCampaign = ourCampaignRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+                .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
         updateCampaignFields(existingCampaign, request);
         OurCampaign updatedCampaign = ourCampaignRepository.save(existingCampaign);
@@ -58,7 +61,7 @@ public class OurCampaignService {
 
     public void deleteCampaign(Long id) {
         OurCampaign campaign = ourCampaignRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+                .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
         ourCampaignRepository.delete(campaign);
     }
@@ -82,33 +85,7 @@ public class OurCampaignService {
     }
 
 
-    public List<CampaignReportDTO> getCampaignsReportData() {
-        return ourCampaignRepository.findAll().stream()
-                .map(this::convertToReportDTO)
-                .collect(Collectors.toList());
-    }
-    public Optional<CampaignReportDTO> getCampaignReportData(Long id) {
-        return ourCampaignRepository.findById(id)
-                .map(this::convertToReportDTO);
-    }
 
-
-
-    private CampaignReportDTO convertToReportDTO(OurCampaign campaign) {
-        CampaignReportDTO dto = new CampaignReportDTO();
-        dto.setCampaignName(campaign.getCampaignName());
-        dto.setBudget(campaign.getBudget());
-
-        Metric metric = campaign.getMetric();
-        if (metric != null) {
-            dto.setClickCount(metric.getClickCount());
-            dto.setCtr(metric.getCtr());
-            dto.setConversionRate(metric.getConversionRate());
-            dto.setRoi(metric.getRoi());
-        }
-
-        return dto;
-    }
 
 
 

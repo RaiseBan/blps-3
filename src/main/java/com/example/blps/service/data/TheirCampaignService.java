@@ -1,6 +1,8 @@
 package com.example.blps.service.data;// TheirCampaignService.java
 import com.example.blps.dto.data.TheirCampaignRequest;
+import com.example.blps.errorHandler.ConflictException;
 import com.example.blps.errorHandler.NotFoundException;
+import com.example.blps.errorHandler.ValidationException;
 import com.example.blps.model.dataEntity.CampaignStatus;
 import com.example.blps.model.dataEntity.TheirCampaign;
 import com.example.blps.repository.data.TheirCampaignRepository;
@@ -25,8 +27,9 @@ public class TheirCampaignService {
         return theirCampaignRepository.findAll();
     }
 
-    public Optional<TheirCampaign> getCampaignById(Long id) {
-        return theirCampaignRepository.findById(id);
+    public TheirCampaign getCampaignById(Long id) {
+        return theirCampaignRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Campaign not found"));
     }
 
     public TheirCampaign createCampaign(TheirCampaignRequest request) {
@@ -35,52 +38,23 @@ public class TheirCampaignService {
         campaign.setImageUrl(request.getImageUrl());
         campaign.setStartDate(request.getStartDate());
         campaign.setEndDate(request.getEndDate());
-
-        // Автоматическое определение статуса
-        LocalDate today = LocalDate.now();
-        if (!today.isBefore(request.getStartDate()) && !today.isAfter(request.getEndDate())) {
-            campaign.setStatus(CampaignStatus.ACTIVE);
-        } else {
-            campaign.setStatus(CampaignStatus.INACTIVE);
-        }
-
+        updateCampaignStatus(campaign);
         return theirCampaignRepository.save(campaign);
     }
 
-    // TheirCampaignService.java
-    // TheirCampaignService.java
     public TheirCampaign updateCampaign(Long id, TheirCampaignRequest request) {
         TheirCampaign existing = theirCampaignRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
-
-        if (request.getEndDate().isBefore(request.getStartDate().plusDays(1))) {
-            throw new IllegalArgumentException("End date must be at least one day after start date");
-        }
-        System.out.println(existing);
-        // Обновляем только разрешенные поля
-        existing.setPartnerName(request.getPartnerName());
-        existing.setImageUrl(request.getImageUrl());
-        existing.setStartDate(request.getStartDate());
-        existing.setEndDate(request.getEndDate());
-
-        // Автоматическое обновление статуса
-        LocalDate today = LocalDate.now();
-        if ((today.isEqual(existing.getStartDate()) || today.isAfter(existing.getStartDate()))
-                && (today.isEqual(existing.getEndDate()) || today.isBefore(existing.getEndDate()))) {
-            existing.setStatus(CampaignStatus.ACTIVE);
-        } else {
-            existing.setStatus(CampaignStatus.INACTIVE);
-        }
+        validateDates(request);
+        updateCampaignFields(existing, request);
+        updateCampaignStatus(existing);
         return theirCampaignRepository.save(existing);
-
-
     }
-
 
     public void toggleStatus(Long id) {
         TheirCampaign campaign = theirCampaignRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+                .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
         CampaignStatus newStatus = campaign.getStatus() == CampaignStatus.ACTIVE
                 ? CampaignStatus.INACTIVE
@@ -89,16 +63,36 @@ public class TheirCampaignService {
         theirCampaignRepository.updateStatus(id, newStatus);
     }
 
-    public boolean deleteCampaign(Long id) {
+    public void deleteCampaign(Long id) {
         TheirCampaign campaign = theirCampaignRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+                .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
         if (campaign.getStatus() == CampaignStatus.ACTIVE) {
-            throw new IllegalStateException("Cannot delete active campaign");
+            throw new ConflictException("Cannot delete active campaign");
         }
 
         theirCampaignRepository.delete(campaign);
-        return true;
     }
 
+    private void validateDates(TheirCampaignRequest request) {
+        if (request.getEndDate().isBefore(request.getStartDate().plusDays(1))) {
+            throw new ValidationException("End date must be at least one day after start date");
+        }
+    }
+
+    private void updateCampaignFields(TheirCampaign existing, TheirCampaignRequest request) {
+        existing.setPartnerName(request.getPartnerName());
+        existing.setImageUrl(request.getImageUrl());
+        existing.setStartDate(request.getStartDate());
+        existing.setEndDate(request.getEndDate());
+    }
+
+    private void updateCampaignStatus(TheirCampaign campaign) {
+        LocalDate today = LocalDate.now();
+        CampaignStatus status = ((today.isEqual(campaign.getStartDate()) || today.isAfter(campaign.getStartDate()))
+                && (today.isEqual(campaign.getEndDate()) || today.isBefore(campaign.getEndDate())))
+                ? CampaignStatus.ACTIVE
+                : CampaignStatus.INACTIVE;
+        campaign.setStatus(status);
+    }
 }

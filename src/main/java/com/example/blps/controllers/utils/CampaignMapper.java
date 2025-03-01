@@ -1,4 +1,4 @@
-package com.example.blps.utils;
+package com.example.blps.controllers.utils;
 
 import com.example.blps.dto.data.MetricDTO;
 import com.example.blps.dto.data.OurCampaignDTO;

@@ -28,9 +28,7 @@ public class TheirCampaignController {
 
     @GetMapping("/{id}")
     public ResponseEntity<TheirCampaign> getById(@PathVariable Long id) {
-        return campaignService.getCampaignById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(campaignService.getCampaignById(id));
     }
 
     @PostMapping
@@ -39,21 +37,11 @@ public class TheirCampaignController {
                 .body(campaignService.createCampaign(request));
     }
 
-    // TheirCampaignController.java
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(
+    public ResponseEntity<TheirCampaign> update(
             @PathVariable Long id,
-            @Valid @RequestBody TheirCampaignRequest request
-    ) {
-        try {
-            TheirCampaign updated = campaignService.updateCampaign(id, request);
-            return ResponseEntity.ok(updated);
-        } catch (DataIntegrityViolationException ex) {
-            return ResponseEntity.badRequest().body("Validation error: " + ex.getMessage());
-        }catch (NotFoundException ex) {
-            ex.printStackTrace();
-            return ResponseEntity.notFound().build();
-        }
+            @Valid @RequestBody TheirCampaignRequest request) {
+        return ResponseEntity.ok(campaignService.updateCampaign(id, request));
     }
 
     @PutMapping("/{id}/toggle-status")
@@ -63,14 +51,8 @@ public class TheirCampaignController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        try {
-            return campaignService.deleteCampaign(id)
-                    ? ResponseEntity.noContent().build()
-                    : ResponseEntity.notFound().build();
-        } catch (IllegalStateException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ex.getMessage());
-        }
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        campaignService.deleteCampaign(id);
+        return ResponseEntity.noContent().build();
     }
 }
