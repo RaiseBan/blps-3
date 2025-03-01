@@ -36,7 +36,7 @@ public class OurCampaign {
     @Column(precision = 10, scale = 2)
     private BigDecimal budget;
 
-    @URL
+    @Column(columnDefinition = "TEXT")
     private String placementUrl;
 
     @OneToOne(

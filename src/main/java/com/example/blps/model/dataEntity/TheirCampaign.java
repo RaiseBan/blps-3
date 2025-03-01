@@ -22,8 +22,8 @@ public class TheirCampaign {
     @Column(nullable = false)
     private String partnerName;
 
-    @URL(message = "Invalid URL format")
-    @Column(nullable = false)
+
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 
     @NotNull(message = "Start date is required")
@@ -39,9 +39,4 @@ public class TheirCampaign {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false) // Статус нельзя менять напрямую
     private CampaignStatus status;
-
-    @AssertTrue(message = "End date must be at least one day after start date")
-    public boolean isEndDateValid() {
-        return endDate.isAfter(startDate.plusDays(1));
-    }
 }
