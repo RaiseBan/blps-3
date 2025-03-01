@@ -1,5 +1,6 @@
 package com.example.blps.controllers;
 
+import com.example.blps.errorHandler.NotFoundException;
 import com.example.blps.model.dataEntity.Metric;
 import com.example.blps.model.dataEntity.OurCampaign;
 import com.example.blps.service.data.MetricService;
@@ -30,7 +31,7 @@ public class RedirectController {
     @GetMapping("/{referralHash}")
     public RedirectView handleRedirect(@PathVariable String referralHash) {
         OurCampaign campaign = campaignService.findByReferralHash(referralHash)
-                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+                .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
         Metric metric = Optional.ofNullable(campaign.getMetric())
                 .orElseGet(() -> {
