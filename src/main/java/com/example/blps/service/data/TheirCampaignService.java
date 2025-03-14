@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -33,6 +32,8 @@ public class TheirCampaignService {
     }
 
     public TheirCampaign createCampaign(TheirCampaignRequest request) {
+        validateDates(request);
+        
         TheirCampaign campaign = new TheirCampaign();
         campaign.setPartnerName(request.getPartnerName());
         campaign.setImageUrl(request.getImageUrl());
@@ -76,7 +77,7 @@ public class TheirCampaignService {
 
     private void validateDates(TheirCampaignRequest request) {
         if (request.getEndDate().isBefore(request.getStartDate().plusDays(1))) {
-            throw new ValidationException("End date must be at least one day after start date");
+            throw new ValidationException("Дата окончания должна быть не раньше, чем через день после даты начала.");
         }
     }
 
