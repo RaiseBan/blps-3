@@ -13,7 +13,7 @@ public class MetricService {
     }
 
 
-    public void saveMetric(Metric metric) {
-        metricRepository.save(metric);
+    public Metric saveMetric(Metric metric) {
+        return metricRepository.save(metric);
     }
 }
