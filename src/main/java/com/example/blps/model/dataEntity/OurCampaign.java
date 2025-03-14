@@ -1,7 +1,6 @@
 package com.example.blps.model.dataEntity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.google.common.hash.Hashing;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
@@ -11,7 +10,6 @@ import jakarta.validation.constraints.NotBlank;
 import org.hibernate.validator.constraints.URL;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,22 +46,9 @@ public class OurCampaign {
     @JsonManagedReference
     private Metric metric;
 
-    private void generateReferralLink() {
-        try {
-            String base = campaignName + Instant.now().toEpochMilli();
-            String hash = Hashing.sha256()
-                    .hashString(base, StandardCharsets.UTF_8)
-                    .toString();
-            // Сохраняем только хэш, без полного URL
-            this.referralLink = hash.substring(0, 12);
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating referral link", e);
-        }
-    }
     @PrePersist
-    private void generateReferralLinkAndMetric() {
-        generateReferralLink();
-
+    private void initializeMetric() {
+        // Создаем метрику, если она еще не была создана
         if (this.metric == null) {
             this.metric = new Metric();
             this.metric.setCampaign(this);
