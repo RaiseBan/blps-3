@@ -11,8 +11,12 @@ import com.example.blps.repository.data.OurCampaignRepository;
 import com.example.blps.controllers.utils.CampaignMapper;
 import com.google.common.hash.Hashing;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -21,12 +25,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class OurCampaignService {
 
     private final OurCampaignRepository ourCampaignRepository;
     private final CampaignMapper campaignMapper;
+    private final PlatformTransactionManager transactionManager;
 
     public List<OurCampaignDTO> getAllCampaigns() {
         return ourCampaignRepository.findAll().stream()
@@ -41,47 +46,102 @@ public class OurCampaignService {
     }
 
     public OurCampaignDTO createCampaign(OurCampaignRequest request) {
-        if (ourCampaignRepository.existsByCampaignName(request.getCampaignName())) {
-            throw new ConflictException("Campaign name already exists");
+        // Определение транзакции с использованием JTA
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+        definition.setName("createCampaignTransaction");
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+
+        // Начало транзакции через Atomikos JTA менеджер
+        TransactionStatus status = transactionManager.getTransaction(definition);
+
+        try {
+            if (ourCampaignRepository.existsByCampaignName(request.getCampaignName())) {
+                throw new ConflictException("Campaign name already exists");
+            }
+
+            OurCampaign newCampaign = campaignMapper.toEntity(request);
+
+            // Генерируем реферальную ссылку
+            String referralLink = generateReferralLink(newCampaign);
+            newCampaign.setReferralLink(referralLink);
+
+            initializeMetric(newCampaign);
+
+            OurCampaign savedCampaign = ourCampaignRepository.save(newCampaign);
+
+            // Коммит транзакции
+            transactionManager.commit(status);
+
+            return campaignMapper.toDTO(savedCampaign);
+        } catch (Exception e) {
+            // Откат транзакции в случае ошибки
+            transactionManager.rollback(status);
+            log.error("Ошибка при создании кампании: {}", e.getMessage());
+            throw e;
         }
-
-        OurCampaign newCampaign = campaignMapper.toEntity(request);
-        
-        // Генерируем реферальную ссылку
-        String referralLink = generateReferralLink(newCampaign);
-        newCampaign.setReferralLink(referralLink);
-        
-        initializeMetric(newCampaign);
-
-        OurCampaign savedCampaign = ourCampaignRepository.save(newCampaign);
-        return campaignMapper.toDTO(savedCampaign);
     }
 
     public OurCampaignDTO updateCampaign(Long id, OurCampaignRequest request) {
-        OurCampaign existingCampaign = ourCampaignRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Campaign not found"));
+        // Определение транзакции с использованием JTA
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+        definition.setName("updateCampaignTransaction");
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        // Проверяем, изменилось ли имя кампании
-        boolean isNameChanged = !existingCampaign.getCampaignName().equals(request.getCampaignName());
-        
-        updateCampaignFields(existingCampaign, request);
-        
-        // Если имя кампании изменилось, генерируем новую реферальную ссылку
-        if (isNameChanged) {
-            String newReferralLink = generateReferralLink(existingCampaign);
-            existingCampaign.setReferralLink(newReferralLink);
+        // Начало транзакции через Atomikos JTA менеджер
+        TransactionStatus status = transactionManager.getTransaction(definition);
+
+        try {
+            OurCampaign existingCampaign = ourCampaignRepository.findById(id)
+                    .orElseThrow(() -> new NotFoundException("Campaign not found"));
+
+            // Проверяем, изменилось ли имя кампании
+            boolean isNameChanged = !existingCampaign.getCampaignName().equals(request.getCampaignName());
+
+            updateCampaignFields(existingCampaign, request);
+
+            // Если имя кампании изменилось, генерируем новую реферальную ссылку
+            if (isNameChanged) {
+                String newReferralLink = generateReferralLink(existingCampaign);
+                existingCampaign.setReferralLink(newReferralLink);
+            }
+
+            OurCampaign updatedCampaign = ourCampaignRepository.save(existingCampaign);
+
+            // Коммит транзакции
+            transactionManager.commit(status);
+
+            return campaignMapper.toDTO(updatedCampaign);
+        } catch (Exception e) {
+            // Откат транзакции в случае ошибки
+            transactionManager.rollback(status);
+            log.error("Ошибка при обновлении кампании: {}", e.getMessage());
+            throw e;
         }
-        
-        OurCampaign updatedCampaign = ourCampaignRepository.save(existingCampaign);
-
-        return campaignMapper.toDTO(updatedCampaign);
     }
 
     public void deleteCampaign(Long id) {
-        OurCampaign campaign = ourCampaignRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Campaign not found"));
+        // Определение транзакции с использованием JTA
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+        definition.setName("deleteCampaignTransaction");
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        ourCampaignRepository.delete(campaign);
+        // Начало транзакции через Atomikos JTA менеджер
+        TransactionStatus status = transactionManager.getTransaction(definition);
+
+        try {
+            OurCampaign campaign = ourCampaignRepository.findById(id)
+                    .orElseThrow(() -> new NotFoundException("Campaign not found"));
+
+            ourCampaignRepository.delete(campaign);
+
+            // Коммит транзакции
+            transactionManager.commit(status);
+        } catch (Exception e) {
+            // Откат транзакции в случае ошибки
+            transactionManager.rollback(status);
+            log.error("Ошибка при удалении кампании: {}", e.getMessage());
+            throw e;
+        }
     }
 
     public Optional<OurCampaign> findByReferralHash(String referralHash) {

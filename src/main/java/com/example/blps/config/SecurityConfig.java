@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,32 +30,27 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                //                        .requestMatchers("/", "/static/**", "/index.html").permitAll()
-                //
-                //
-                //                        .requestMatchers("/api/labels/**").authenticated()
-                //                        .requestMatchers("/api/coordinates/**").authenticated()
-                //                        .requestMatchers("/api/albums/**").authenticated()
-                //
+                // Публичные эндпоинты
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/redirect/**").permitAll()
                 .requestMatchers("/").permitAll()
-                //                        .requestMatchers("/ws/music/**").permitAll()
-                //                        .requestMatchers("/ws/admin/**").permitAll()
-                //                        .requestMatchers(HttpMethod.GET, "/api/music").permitAll()
-                //                        .requestMatchers("/api/music/**").authenticated()
-                //                        .requestMatchers("/api/import-history").authenticated()
-                //                        .requestMatchers("/api/v1/special/**").permitAll()
-                //                        .requestMatchers("/api/v1/special/add-single").authenticated()
-                //                        .requestMatchers("/api/v1/special/remove-participant").authenticated()
-                .requestMatchers("/api/our-campaigns").authenticated()
-                .requestMatchers("/api/our-campaigns/**").hasRole("ADMIN")
-                .requestMatchers("/api/their-campaigns/**").hasRole("ADMIN")
-                .requestMatchers("/api/reports/campaigns").hasRole("ADMIN")
-                .requestMatchers("/api/reports/campaigns/**").hasRole("ADMIN")
-                //                        .requestMatchers("/api/admin-requests/**").hasRole("ADMIN")
-                //                        .requestMatchers("/api/admin-requests/request").hasAuthority("ROLE_USER")
+                // ADMIN (Супер-админ) - полный доступ ко всем функциям
+                .requestMatchers("/api/our-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER", "ANALYST")
+                .requestMatchers(HttpMethod.DELETE, "/api/our-campaigns/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/our-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
+                .requestMatchers(HttpMethod.PUT, "/api/our-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
+                .requestMatchers("/api/our-campaigns/*/optimize-budget").hasRole("ADMIN") // Только супер-админ может оптимизировать бюджет
 
+                .requestMatchers("/api/their-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER", "ANALYST")
+                .requestMatchers(HttpMethod.DELETE, "/api/their-campaigns/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/their-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
+                .requestMatchers(HttpMethod.PUT, "/api/their-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
+                .requestMatchers("/api/their-campaigns/import").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER") // Импорт данных
+
+                // Отчеты
+                .requestMatchers("/api/reports/campaigns").hasAnyRole("ADMIN", "ANALYST")
+                .requestMatchers("/api/reports/campaigns/**").hasAnyRole("ADMIN", "ANALYST")
+                // Все остальные запросы требуют аутентификации
                 .anyRequest().authenticated())
                 .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
