@@ -171,4 +171,29 @@ public class TheirCampaignService {
                 : CampaignStatus.INACTIVE;
         campaign.setStatus(status);
     }
+
+    public void setCampaignsStatus(List<Long> campaignIds, CampaignStatus status) {
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+        definition.setName("setBulkStatusTransaction");
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+
+        TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
+
+        try {
+            for (Long id : campaignIds) {
+                if (!theirCampaignRepository.existsById(id)) {
+                    throw new NotFoundException("Campaign with ID " + id + " not found");
+                }
+            }
+
+            for (Long id : campaignIds) {
+                theirCampaignRepository.updateStatus(id, status);
+            }
+
+            transactionManager.commit(transactionStatus);
+        } catch (Exception e) {
+            transactionManager.rollback(transactionStatus);
+            throw e;
+        }
+    }
 }
