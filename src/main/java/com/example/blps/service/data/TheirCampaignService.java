@@ -1,4 +1,26 @@
 package com.example.blps.service.data;// TheirCampaignService.java
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.jta.JtaTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.example.blps.dto.data.TheirCampaignRequest;
 import com.example.blps.errorHandler.ConflictException;
 import com.example.blps.errorHandler.NotFoundException;
@@ -6,20 +28,18 @@ import com.example.blps.errorHandler.ValidationException;
 import com.example.blps.model.dataEntity.CampaignStatus;
 import com.example.blps.model.dataEntity.TheirCampaign;
 import com.example.blps.repository.data.TheirCampaignRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @Service
 @Transactional
 public class TheirCampaignService {
 
     private final TheirCampaignRepository theirCampaignRepository;
+    private final PlatformTransactionManager transactionManager;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public TheirCampaignService(TheirCampaignRepository theirCampaignRepository) {
+    public TheirCampaignService(TheirCampaignRepository theirCampaignRepository, PlatformTransactionManager transactionManager) {
         this.theirCampaignRepository = theirCampaignRepository;
+        this.transactionManager = transactionManager;
     }
 
     public List<TheirCampaign> getAllCampaigns() {
@@ -73,6 +93,61 @@ public class TheirCampaignService {
         }
 
         theirCampaignRepository.delete(campaign);
+    }
+    
+    public List<TheirCampaign> importFromFile(MultipartFile file) {
+        // Определение транзакции с использованием JTA
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+        definition.setName("importFromFileTransaction");
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        
+        // Начало транзакции через Atomikos JTA менеджер
+        TransactionStatus status = transactionManager.getTransaction(definition);
+        
+        List<TheirCampaign> importedCampaigns = new ArrayList<>();
+        
+        try {
+            // Этап загрузки файла и парсинг
+            List<TheirCampaignRequest> campaignRequests = parseCsvFile(file);
+            
+            // Этап валидации данных и сохранения
+            for (TheirCampaignRequest request : campaignRequests) {
+                validateDates(request);
+                TheirCampaign campaign = createCampaign(request);
+                importedCampaigns.add(campaign);
+            }
+            
+            // Коммит транзакции в случае успеха
+            transactionManager.commit(status);
+            return importedCampaigns;
+        } catch (Exception e) {
+            // Откат транзакции в случае ошибки
+            transactionManager.rollback(status);
+            throw new ValidationException("Ошибка при импорте файла: " + e.getMessage());
+        }
+    }
+    
+    private List<TheirCampaignRequest> parseCsvFile(MultipartFile file) throws IOException {
+        List<TheirCampaignRequest> campaignRequests = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            CSVParser csvParser = CSVFormat.DEFAULT
+                    .withHeader("partnerName", "imageUrl", "startDate", "endDate")
+                    .withFirstRecordAsHeader()
+                    .parse(reader);
+            
+            for (CSVRecord record : csvParser) {
+                TheirCampaignRequest request = new TheirCampaignRequest();
+                request.setPartnerName(record.get("partnerName"));
+                request.setImageUrl(record.get("imageUrl"));
+                request.setStartDate(LocalDate.parse(record.get("startDate"), DATE_FORMATTER));
+                request.setEndDate(LocalDate.parse(record.get("endDate"), DATE_FORMATTER));
+                
+                campaignRequests.add(request);
+            }
+        }
+        
+        return campaignRequests;
     }
 
     private void validateDates(TheirCampaignRequest request) {

@@ -1,28 +1,54 @@
 package com.example.blps.service.data;
 
+import java.math.BigDecimal;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.jta.JtaTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+
 import com.example.blps.errorHandler.NotFoundException;
 import com.example.blps.model.dataEntity.Metric;
 import com.example.blps.model.dataEntity.OurCampaign;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class ReferralService {
+
     private final OurCampaignService campaignService;
     private final MetricService metricService;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional
     public void processReferralClick(String referralHash) {
-        OurCampaign campaign = campaignService.findByReferralHash(referralHash)
-                .orElseThrow(() -> new NotFoundException("Campaign not found"));
+        // Определение транзакции с использованием JTA
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+        definition.setName("processReferralClickTransaction");
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        Metric metric = getOrCreateMetric(campaign);
-        updateMetrics(metric);
+        // Начало транзакции через Atomikos JTA менеджер
+        TransactionStatus status = transactionManager.getTransaction(definition);
+
+        try {
+            // Бизнес-логика внутри транзакции
+            OurCampaign campaign = campaignService.findByReferralHash(referralHash)
+                    .orElseThrow(() -> new NotFoundException("Campaign not found"));
+
+            Metric metric = getOrCreateMetric(campaign);
+            updateMetrics(metric);
+            System.out.println("commit");
+
+            // Подтверждение транзакции в случае успеха через Atomikos JTA
+            transactionManager.commit(status);
+        } catch (Exception e) {
+            // Откат транзакции в случае ошибки через Atomikos JTA
+            transactionManager.rollback(status);
+            throw e;
+        }
     }
 
     private Metric getOrCreateMetric(OurCampaign campaign) {
