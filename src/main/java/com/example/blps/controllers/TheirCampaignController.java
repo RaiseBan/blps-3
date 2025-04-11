@@ -2,6 +2,7 @@ package com.example.blps.controllers;// TheirCampaignController.java
 
 import java.util.List;
 
+import com.example.blps.dto.data.SetStatusRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -69,6 +70,13 @@ public class TheirCampaignController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         campaignService.deleteCampaign(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/set-status")
+    public ResponseEntity<Void> setCampaignsStatus(
+            @RequestBody SetStatusRequest request) {
+        campaignService.setCampaignsStatus(request.getCampaignIds(), request.getStatus());
         return ResponseEntity.noContent().build();
     }
 }
