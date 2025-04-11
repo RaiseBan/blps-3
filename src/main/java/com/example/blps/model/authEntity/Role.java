@@ -2,5 +2,7 @@ package com.example.blps.model.authEntity;
 
 public enum Role {
     USER,
-    ADMIN
+    ADMIN,
+    CAMPAIGN_MANAGER,
+    ANALYST
 }
