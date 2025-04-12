@@ -57,7 +57,7 @@ public class SecurityConfig {
                 .requestMatchers("/redirect/**").permitAll()
                 .requestMatchers("/api/auth/info").permitAll()
                 // Сначала более специфичные правила, которые требуют ADMIN
-                .requestMatchers("/api/our-campaigns/*/optimize-budget").hasRole("ADMIN") // Только супер-админ может оптимизировать бюджет
+//                .requestMatchers("/api/our-campaigns/*/optimize-budget").hasRole("ADMIN") // Только супер-админ может оптимизировать бюджет
                 .requestMatchers(HttpMethod.DELETE, "/api/our-campaigns/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/their-campaigns/**").hasRole("ADMIN")
                 // Затем правила для CAMPAIGN_MANAGER и ADMIN
