@@ -64,7 +64,7 @@ public class TheirCampaignController {
     @PutMapping("/{id}/toggle-status")
     public ResponseEntity<Void> toggleStatus(@PathVariable Long id) {
         campaignService.toggleStatus(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
@@ -77,6 +77,6 @@ public class TheirCampaignController {
     public ResponseEntity<Void> setCampaignsStatus(
             @RequestBody SetStatusRequest request) {
         campaignService.setCampaignsStatus(request.getCampaignIds(), request.getStatus());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 }
