@@ -2,17 +2,20 @@ package com.example.blps.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.http.HttpMethod;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,19 +24,38 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
-    private final AuthenticationProvider authenticationProvider;
+    private final UserDetailsService userDetailsService;
+    private final PasswordEncoder passwordEncoder;
+
+    @Bean
+    public DaoAuthenticationProvider authProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        System.out.println("DaoAuthenticationProvider создан с passwordEncoder: " + passwordEncoder);
+        return provider;
+    }
+
+    @Bean
+    public AuthenticationManager authManager() {
+        return new ProviderManager(authProvider());
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        System.out.println("Настройка SecurityFilterChain");
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session
+                        -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationManager(authManager())
                 .authorizeHttpRequests(auth -> auth
                 // Публичные эндпоинты
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/redirect/**").permitAll()
                 .requestMatchers("/").permitAll()
+                .requestMatchers("/redirect/**").permitAll()
+                .requestMatchers("/api/auth/info").permitAll()
                 // ADMIN (Супер-админ) - полный доступ ко всем функциям
                 .requestMatchers("/api/our-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER", "ANALYST")
                 .requestMatchers(HttpMethod.DELETE, "/api/our-campaigns/**").hasRole("ADMIN")
@@ -51,11 +73,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/reports/campaigns").hasAnyRole("ADMIN", "ANALYST")
                 .requestMatchers("/api/reports/campaigns/**").hasAnyRole("ADMIN", "ANALYST")
                 // Все остальные запросы требуют аутентификации
-                .anyRequest().authenticated())
-                .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .anyRequest().authenticated()
+                )
+                .httpBasic(httpBasic -> {
+                    System.out.println("Настройка Basic Auth");
+                });
 
         return http.build();
     }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<users>
+    <user username="admin" password="{MD5}5f4dcc3b5aa765d61d8327deb882cf99">
+        <role>ADMIN</role>
+    </user>
+    <user username="manager" password="{MD5}5f4dcc3b5aa765d61d8327deb882cf99">
+        <role>CAMPAIGN_MANAGER</role>
+    </user>
+    <user username="analyst" password="{MD5}5f4dcc3b5aa765d61d8327deb882cf99">
+        <role>ANALYST</role>
+    </user>
+    <user username="user" password="{MD5}5f4dcc3b5aa765d61d8327deb882cf99">
+        <role>USER</role>
+    </user>
+</users> 
