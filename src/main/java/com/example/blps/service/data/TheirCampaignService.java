@@ -30,7 +30,6 @@ import com.example.blps.model.dataEntity.TheirCampaign;
 import com.example.blps.repository.data.TheirCampaignRepository;
 
 @Service
-@Transactional
 public class TheirCampaignService {
 
     private final TheirCampaignRepository theirCampaignRepository;
