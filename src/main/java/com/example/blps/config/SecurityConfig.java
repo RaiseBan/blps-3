@@ -56,21 +56,19 @@ public class SecurityConfig {
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/redirect/**").permitAll()
                 .requestMatchers("/api/auth/info").permitAll()
-                // ADMIN (Супер-админ) - полный доступ ко всем функциям
-                .requestMatchers("/api/our-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER", "ANALYST")
+                // Сначала более специфичные правила, которые требуют ADMIN
+                .requestMatchers("/api/our-campaigns/*/optimize-budget").hasRole("ADMIN") // Только супер-админ может оптимизировать бюджет
                 .requestMatchers(HttpMethod.DELETE, "/api/our-campaigns/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/their-campaigns/**").hasRole("ADMIN")
+                // Затем правила для CAMPAIGN_MANAGER и ADMIN
                 .requestMatchers(HttpMethod.POST, "/api/our-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
                 .requestMatchers(HttpMethod.PUT, "/api/our-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
-                .requestMatchers("/api/our-campaigns/*/optimize-budget").hasRole("ADMIN") // Только супер-админ может оптимизировать бюджет
-
-                .requestMatchers("/api/their-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER", "ANALYST")
-                .requestMatchers(HttpMethod.DELETE, "/api/their-campaigns/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/their-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
                 .requestMatchers(HttpMethod.PUT, "/api/their-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
-                .requestMatchers("/api/their-campaigns/import").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER") // Импорт данных
-
-                // Отчеты
-                .requestMatchers("/api/reports/campaigns").hasAnyRole("ADMIN", "ANALYST")
+                .requestMatchers("/api/their-campaigns/import").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER")
+                // Затем правила для просмотра (ADMIN, CAMPAIGN_MANAGER, ANALYST)
+                .requestMatchers(HttpMethod.GET, "/api/our-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER", "ANALYST")
+                .requestMatchers(HttpMethod.GET, "/api/their-campaigns/**").hasAnyRole("ADMIN", "CAMPAIGN_MANAGER", "ANALYST")
                 .requestMatchers("/api/reports/campaigns/**").hasAnyRole("ADMIN", "ANALYST")
                 // Все остальные запросы требуют аутентификации
                 .anyRequest().authenticated()
