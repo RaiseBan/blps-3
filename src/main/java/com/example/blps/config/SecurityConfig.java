@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
