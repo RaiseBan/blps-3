@@ -31,14 +31,14 @@ public class ActiveMQConfig {
      * Встроенный брокер ActiveMQ для разработки
      * В продакшн среде следует использовать внешний брокер
      */
-    @Bean
-    public BrokerService broker() throws Exception {
-        BrokerService broker = new BrokerService();
-        broker.addConnector("stomp://localhost:61613");
-        broker.addConnector("tcp://localhost:61616");
-        broker.setPersistent(false);
-        return broker;
-    }
+//    @Bean
+//    public BrokerService broker() throws Exception {
+//        BrokerService broker = new BrokerService();
+//        broker.addConnector("stomp://localhost:61613");
+//        broker.addConnector("tcp://localhost:61616");
+//        broker.setPersistent(false);
+//        return broker;
+//    }
 
     @Bean
     public ConnectionFactory connectionFactory() {
