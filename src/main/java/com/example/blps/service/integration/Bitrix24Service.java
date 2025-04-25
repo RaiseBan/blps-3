@@ -46,11 +46,29 @@ public class Bitrix24Service {
                     campaign.getPlacementUrl()
             );
 
-            return connector.createTask(title, description, "1"); // ID ответственного
+            return createTask(title, description, "1"); // ID ответственного
         } catch (ResourceException e) {
             log.error("Error creating task in Bitrix24", e);
             throw new RuntimeException("Failed to create task in Bitrix24", e);
         }
+    }
+
+    /**
+     * Создает задачу в Битрикс24.
+     *
+     * @param title название задачи
+     * @param description описание задачи
+     * @param responsibleId ID ответственного сотрудника
+     * @return ID созданной задачи
+     * @throws ResourceException если произошла ошибка при создании задачи
+     */
+    public String createTask(String title, String description, String responsibleId) throws ResourceException {
+        Map<String, Object> params = new HashMap<>();
+        params.put("fields[TITLE]", title);
+        params.put("fields[DESCRIPTION]", description);
+        params.put("fields[RESPONSIBLE_ID]", responsibleId);
+
+        return connector.executeMethod("tasks.task.add", params);
     }
 
     /**
@@ -139,7 +157,7 @@ public class Bitrix24Service {
                     calculatePercentChange(oldBudget, newBudget)
             );
 
-            return connector.createTask(title, description, "1"); // ID ответственного
+            return createTask(title, description, "1"); // ID ответственного
         } catch (ResourceException e) {
             log.error("Error syncing budget optimization with Bitrix24", e);
             throw new RuntimeException("Failed to sync budget optimization with Bitrix24", e);
