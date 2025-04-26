@@ -4,8 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -13,8 +15,17 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Notification {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(
+            name = "uuid2",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
+    private UUID id;
+
+    // ID для совместимости с предыдущим кодом
+    @Transient
+    private Long numericId;
 
     @Column(nullable = false)
     private String title;
@@ -44,5 +55,23 @@ public class Notification {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+    }
+
+    // Геттер для возврата Long ID для обратной совместимости
+    public Long getId() {
+        if (id == null) {
+            return null;
+        }
+
+        if (numericId == null) {
+            numericId = Math.abs(id.hashCode()) % 1_000_000_000L;
+        }
+
+        return numericId;
+    }
+
+    // Сеттер для обратной совместимости
+    public void setId(Long id) {
+        this.numericId = id;
     }
 }

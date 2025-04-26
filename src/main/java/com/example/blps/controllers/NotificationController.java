@@ -8,6 +8,7 @@ import com.example.blps.repository.notification.DashboardRepository;
 import com.example.blps.service.notification.MessageSenderService;
 import com.example.blps.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -114,21 +116,25 @@ public class NotificationController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Запуск задания на генерацию дашборда
-     * 
-     * @param request запрос на генерацию дашборда
-     * @return статус операции
-     */
     @PostMapping("/dashboards/generate")
     @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
     public ResponseEntity<String> generateDashboard(@RequestBody DashboardGenerationRequest request) {
         // Устанавливаем информацию о создателе
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         request.setCreatedBy(auth.getName());
-        
-        messageSenderService.sendDashboardGenerationRequest(request);
-        return ResponseEntity.ok("Dashboard generation started");
+
+        try {
+            // Добавляем дополнительное логирование
+            log.info("Received dashboard generation request from UI: {}", request);
+
+            // Отправляем запрос в очередь
+            messageSenderService.sendDashboardGenerationRequest(request);
+
+            return ResponseEntity.ok("Dashboard generation started. Request sent to processing queue.");
+        } catch (Exception e) {
+            log.error("Error sending dashboard generation request", e);
+            return ResponseEntity.status(500).body("Error starting dashboard generation: " + e.getMessage());
+        }
     }
 
     /**
