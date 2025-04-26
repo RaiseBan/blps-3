@@ -1,5 +1,6 @@
 package com.example.blps.service.integration;
 
+import com.example.blps.dto.notification.ChartData;
 import jakarta.resource.ResourceException;
 
 import org.springframework.stereotype.Service;
@@ -95,39 +96,6 @@ public class Bitrix24Service {
         }
     }
 
-    /**
-     * Отправляет отчет о результатах кампаний в Битрикс24.
-     *
-     * @param reports список отчетов по кампаниям
-     * @return результат операции
-     */
-    public String sendCampaignReports(List<CampaignReportDTO> reports) {
-        try {
-            Map<String, Object> params = new HashMap<>();
-            params.put("TITLE", "Отчет по рекламным кампаниям");
-
-            StringBuilder reportText = new StringBuilder("Данные по кампаниям:\n\n");
-
-            for (CampaignReportDTO report : reports) {
-                reportText.append(String.format(
-                        "- %s: Бюджет: %s, Клики: %d, CTR: %s%%, Конверсия: %s%%, ROI: %s%%\n",
-                        report.getCampaignName(),
-                        report.getBudget(),
-                        report.getClickCount(),
-                        report.getCtr(),
-                        report.getConversionRate(),
-                        report.getRoi()
-                ));
-            }
-
-            params.put("DESCRIPTION", reportText.toString());
-
-            return connector.executeMethod("disk.storage.uploadfile", params);
-        } catch (ResourceException e) {
-            log.error("Error sending campaign reports to Bitrix24", e);
-            throw new RuntimeException("Failed to send campaign reports to Bitrix24", e);
-        }
-    }
 
     /**
      * Синхронизирует оптимизацию бюджета с Битрикс24.
@@ -177,5 +145,127 @@ public class Bitrix24Service {
                 .divide(oldValue, 2, java.math.RoundingMode.HALF_UP);
 
         return change.toString();
+    }
+
+    /**
+     * Создает задачу в Битрикс24 с приложенной визуализацией дашборда.
+     *
+     * @param title заголовок задачи
+     * @param description описание задачи
+     * @param chartData данные для визуализации
+     * @param responsibleId ID ответственного сотрудника
+     * @return ID созданной задачи
+     * @throws ResourceException если произошла ошибка при создании задачи
+     */
+    public String createDashboardTask(String title, String description, ChartData chartData, String responsibleId) throws ResourceException {
+        try {
+            // Преобразуем данные диаграммы в текстовое представление
+            String chartDataJson = objectMapper.writeValueAsString(chartData);
+
+            // Подготавливаем полное описание, включающее данные диаграммы
+            StringBuilder fullDescription = new StringBuilder(description);
+            fullDescription.append("\n\n--- Данные диаграммы ---\n");
+            fullDescription.append("Тип: ").append(chartData.getChartType()).append("\n");
+            fullDescription.append("Заголовок: ").append(chartData.getTitle()).append("\n");
+            if (chartData.getXAxisLabel() != null) {
+                fullDescription.append("Ось X: ").append(chartData.getXAxisLabel()).append("\n");
+            }
+            if (chartData.getYAxisLabel() != null) {
+                fullDescription.append("Ось Y: ").append(chartData.getYAxisLabel()).append("\n");
+            }
+
+            // Добавляем текстовое представление данных для использования в Bitrix24
+            fullDescription.append("\nДанные диаграммы:\n");
+            fullDescription.append(chartDataJson);
+
+            // Создаем задачу с расширенным описанием
+            log.info("Creating Bitrix24 dashboard task: {}", title);
+            return createTask(title, fullDescription.toString(), responsibleId);
+
+        } catch (Exception e) {
+            log.error("Error creating dashboard task in Bitrix24", e);
+            throw new ResourceException("Failed to create dashboard task in Bitrix24", e);
+        }
+    }
+
+    /**
+     * Создает сообщение в живой ленте Битрикс24 с данными дашборда.
+     *
+     * @param title заголовок сообщения
+     * @param message текст сообщения
+     * @param chartData данные для визуализации
+     * @return ID созданного сообщения
+     * @throws ResourceException если произошла ошибка при создании сообщения
+     */
+    public String createLiveFeedMessage(String title, String message, ChartData chartData) throws ResourceException {
+        try {
+            // Преобразуем данные диаграммы в текстовое представление
+            String chartDataJson = objectMapper.writeValueAsString(chartData);
+
+            // Подготавливаем полное сообщение
+            StringBuilder fullMessage = new StringBuilder();
+            fullMessage.append("<b>").append(title).append("</b><br><br>");
+            fullMessage.append(message.replace("\n", "<br>"));
+            fullMessage.append("<br><br><b>Данные диаграммы:</b><br>");
+            fullMessage.append("<pre>").append(chartDataJson).append("</pre>");
+
+            // Параметры для создания сообщения в живой ленте
+            Map<String, Object> params = new HashMap<>();
+            params.put("POST_TITLE", title);
+            params.put("MESSAGE", fullMessage.toString());
+            params.put("DEST", "[\"UA\"]"); // Отправка всем пользователям
+
+            return connector.executeMethod("socialnetwork.livefeed.post.add", params);
+
+        } catch (Exception e) {
+            log.error("Error creating live feed message in Bitrix24", e);
+            throw new ResourceException("Failed to create live feed message in Bitrix24", e);
+        }
+    }
+
+    /**
+     * Отправляет отчет о результатах кампаний в Битрикс24.
+     *
+     * @param reports список отчетов по кампаниям
+     * @return результат операции
+     */
+    public String sendCampaignReports(List<CampaignReportDTO> reports) {
+        try {
+            Map<String, Object> params = new HashMap<>();
+            params.put("TITLE", "Отчет по рекламным кампаниям");
+
+            StringBuilder reportText = new StringBuilder("Данные по кампаниям:\n\n");
+
+            for (CampaignReportDTO report : reports) {
+                reportText.append(String.format(
+                        "- %s: Бюджет: %s, Клики: %d, CTR: %s%%, Конверсия: %s%%, ROI: %s%%\n",
+                        report.getCampaignName(),
+                        report.getBudget(),
+                        report.getClickCount(),
+                        report.getCtr(),
+                        report.getConversionRate(),
+                        report.getRoi()
+                ));
+            }
+
+            params.put("DESCRIPTION", reportText.toString());
+
+            // Отправляем данные в Битрикс24
+            return connector.executeMethod("disk.storage.uploadfile", params);
+        } catch (ResourceException e) {
+            log.error("Error sending campaign reports to Bitrix24", e);
+            throw new RuntimeException("Failed to send campaign reports to Bitrix24", e);
+        }
+    }
+
+    /**
+     * Проверяет состояние подключения к Битрикс24.
+     *
+     * @return информация о состоянии подключения
+     * @throws ResourceException если произошла ошибка при проверке подключения
+     */
+    public String checkConnection() throws ResourceException {
+        Map<String, Object> params = new HashMap<>();
+        return connector.executeMethod("app.info", params);
     }
 }

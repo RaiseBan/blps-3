@@ -10,11 +10,15 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import com.example.blps.dto.data.OurCampaignDTO;
+import com.example.blps.dto.notification.NotificationMessage;
 import com.example.blps.errorHandler.NotFoundException;
 import com.example.blps.model.dataEntity.Metric;
 import com.example.blps.model.dataEntity.OurCampaign;
+import com.example.blps.model.notification.NotificationType;
 import com.example.blps.repository.data.OurCampaignRepository;
 import com.example.blps.controllers.utils.CampaignMapper;
+import com.example.blps.service.integration.Bitrix24Service;
+import com.example.blps.service.notification.MessageSenderService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +31,8 @@ public class BudgetOptimizationService {
     private final OurCampaignRepository campaignRepository;
     private final PlatformTransactionManager transactionManager;
     private final CampaignMapper campaignMapper;
+    private final MessageSenderService messageSenderService;
+    private final Bitrix24Service bitrix24Service;
 
     private static final BigDecimal HIGH_ROI_THRESHOLD = new BigDecimal("25.0");
     private static final BigDecimal LOW_ROI_THRESHOLD = new BigDecimal("0.0");
@@ -55,10 +61,10 @@ public class BudgetOptimizationService {
                     .orElseThrow(() -> new NotFoundException("Кампания не найдена"));
 
             // Анализ метрик и расчет нового бюджета
+            BigDecimal oldBudget = campaign.getBudget();
             BigDecimal optimizedBudget = calculateOptimizedBudget(campaign);
 
             // Логирование изменений для аудита
-            BigDecimal oldBudget = campaign.getBudget();
             log.info("Оптимизация бюджета кампании {} (ID: {}): {} -> {}",
                     campaign.getCampaignName(), campaign.getId(), oldBudget, optimizedBudget);
 
@@ -69,6 +75,22 @@ public class BudgetOptimizationService {
             // Коммит транзакции
             transactionManager.commit(status);
 
+            // Отправка уведомления
+            sendBudgetOptimizationNotification(campaign, oldBudget, optimizedBudget);
+
+            // Отправка информации в Bitrix24
+            try {
+                bitrix24Service.syncBudgetOptimization(
+                        campaignId,
+                        campaign.getCampaignName(),
+                        oldBudget,
+                        optimizedBudget
+                );
+            } catch (Exception e) {
+                log.error("Ошибка при отправке данных об оптимизации бюджета в Bitrix24", e);
+                // Не прерываем основной процесс из-за ошибки интеграции
+            }
+
             return campaignMapper.toDTO(savedCampaign);
 
         } catch (Exception e) {
@@ -77,6 +99,49 @@ public class BudgetOptimizationService {
             log.error("Ошибка при оптимизации бюджета кампании: {}", e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Отправляет уведомление об оптимизации бюджета
+     */
+    private void sendBudgetOptimizationNotification(OurCampaign campaign, BigDecimal oldBudget, BigDecimal newBudget) {
+        // Рассчитываем процент изменения
+        BigDecimal percentChange = calculatePercentChange(oldBudget, newBudget);
+
+        String title = "Оптимизирован бюджет кампании: " + campaign.getCampaignName();
+        String message = String.format(
+                "Произведена автоматическая оптимизация бюджета для кампании '%s'.\n" +
+                        "Старый бюджет: %s\n" +
+                        "Новый бюджет: %s\n" +
+                        "Изменение: %s%%",
+                campaign.getCampaignName(),
+                oldBudget,
+                newBudget,
+                percentChange
+        );
+
+        NotificationMessage notification = NotificationMessage.builder()
+                .title(title)
+                .message(message)
+                .type(NotificationType.BUDGET_OPTIMIZED)
+                .recipient("ROLE_ADMIN,ROLE_CAMPAIGN_MANAGER,ROLE_ANALYST")
+                .relatedEntityId(campaign.getId())
+                .build();
+
+        messageSenderService.sendNotification(notification);
+    }
+
+    /**
+     * Рассчитывает процентное изменение
+     */
+    private BigDecimal calculatePercentChange(BigDecimal oldValue, BigDecimal newValue) {
+        if (oldValue.compareTo(BigDecimal.ZERO) == 0) {
+            return new BigDecimal("100"); // Если старое значение было 0
+        }
+
+        return newValue.subtract(oldValue)
+                .multiply(new BigDecimal("100"))
+                .divide(oldValue, 2, RoundingMode.HALF_UP);
     }
 
     /**

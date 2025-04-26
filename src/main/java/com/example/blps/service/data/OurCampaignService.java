@@ -1,17 +1,21 @@
 package com.example.blps.service.data;
 
-import com.example.blps.dto.data.CampaignReportDTO;
 import com.example.blps.dto.data.OurCampaignDTO;
 import com.example.blps.dto.data.OurCampaignRequest;
+import com.example.blps.dto.notification.NotificationMessage;
 import com.example.blps.errorHandler.ConflictException;
 import com.example.blps.errorHandler.NotFoundException;
 import com.example.blps.model.dataEntity.Metric;
 import com.example.blps.model.dataEntity.OurCampaign;
+import com.example.blps.model.notification.NotificationType;
 import com.example.blps.repository.data.OurCampaignRepository;
 import com.example.blps.controllers.utils.CampaignMapper;
+import com.example.blps.service.notification.MessageSenderService;
 import com.google.common.hash.Hashing;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -32,6 +36,7 @@ public class OurCampaignService {
     private final OurCampaignRepository ourCampaignRepository;
     private final CampaignMapper campaignMapper;
     private final PlatformTransactionManager transactionManager;
+    private final MessageSenderService messageSenderService;
 
     public List<OurCampaignDTO> getAllCampaigns() {
         return ourCampaignRepository.findAll().stream()
@@ -72,6 +77,9 @@ public class OurCampaignService {
             // Коммит транзакции
             transactionManager.commit(status);
 
+            // Отправка уведомления о создании кампании
+            sendCampaignCreatedNotification(savedCampaign);
+
             return campaignMapper.toDTO(savedCampaign);
         } catch (Exception e) {
             // Откат транзакции в случае ошибки
@@ -110,6 +118,9 @@ public class OurCampaignService {
             // Коммит транзакции
             transactionManager.commit(status);
 
+            // Отправка уведомления об обновлении кампании
+            sendCampaignUpdatedNotification(updatedCampaign);
+
             return campaignMapper.toDTO(updatedCampaign);
         } catch (Exception e) {
             // Откат транзакции в случае ошибки
@@ -132,10 +143,16 @@ public class OurCampaignService {
             OurCampaign campaign = ourCampaignRepository.findById(id)
                     .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
+            // Сохраняем имя кампании для использования в уведомлении
+            String campaignName = campaign.getCampaignName();
+
             ourCampaignRepository.delete(campaign);
 
             // Коммит транзакции
             transactionManager.commit(status);
+
+            // Отправка уведомления об удалении кампании
+            sendCampaignDeletedNotification(id, campaignName);
         } catch (Exception e) {
             // Откат транзакции в случае ошибки
             transactionManager.rollback(status);
@@ -175,6 +192,103 @@ public class OurCampaignService {
             return hash.substring(0, 12);
         } catch (Exception e) {
             throw new RuntimeException("Error generating referral link", e);
+        }
+    }
+
+    /**
+     * Отправляет уведомление о создании кампании
+     */
+    private void sendCampaignCreatedNotification(OurCampaign campaign) {
+        try {
+            // Получаем информацию о текущем пользователе
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth != null ? auth.getName() : "system";
+
+            NotificationMessage notification = NotificationMessage.builder()
+                    .title("Создана новая кампания: " + campaign.getCampaignName())
+                    .message(String.format(
+                            "Создана новая рекламная кампания:\n" +
+                                    "Название: %s\n" +
+                                    "Бюджет: %s\n" +
+                                    "Реферальная ссылка: %s\n" +
+                                    "Создана пользователем: %s",
+                            campaign.getCampaignName(),
+                            campaign.getBudget(),
+                            campaign.getReferralLink(),
+                            username
+                    ))
+                    .type(NotificationType.CAMPAIGN_CREATED)
+                    .recipient("ROLE_ADMIN,ROLE_CAMPAIGN_MANAGER,ROLE_ANALYST")
+                    .relatedEntityId(campaign.getId())
+                    .build();
+
+            messageSenderService.sendNotification(notification);
+        } catch (Exception e) {
+            // Логируем ошибку, но не прерываем основной поток выполнения
+            log.error("Ошибка при отправке уведомления о создании кампании: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Отправляет уведомление об обновлении кампании
+     */
+    private void sendCampaignUpdatedNotification(OurCampaign campaign) {
+        try {
+            // Получаем информацию о текущем пользователе
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth != null ? auth.getName() : "system";
+
+            NotificationMessage notification = NotificationMessage.builder()
+                    .title("Обновлена кампания: " + campaign.getCampaignName())
+                    .message(String.format(
+                            "Обновлена рекламная кампания:\n" +
+                                    "Название: %s\n" +
+                                    "Бюджет: %s\n" +
+                                    "Обновлена пользователем: %s",
+                            campaign.getCampaignName(),
+                            campaign.getBudget(),
+                            username
+                    ))
+                    .type(NotificationType.CAMPAIGN_UPDATED)
+                    .recipient("ROLE_ADMIN,ROLE_CAMPAIGN_MANAGER,ROLE_ANALYST")
+                    .relatedEntityId(campaign.getId())
+                    .build();
+
+            messageSenderService.sendNotification(notification);
+        } catch (Exception e) {
+            // Логируем ошибку, но не прерываем основной поток выполнения
+            log.error("Ошибка при отправке уведомления об обновлении кампании: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Отправляет уведомление об удалении кампании
+     */
+    private void sendCampaignDeletedNotification(Long campaignId, String campaignName) {
+        try {
+            // Получаем информацию о текущем пользователе
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth != null ? auth.getName() : "system";
+
+            NotificationMessage notification = NotificationMessage.builder()
+                    .title("Удалена кампания: " + campaignName)
+                    .message(String.format(
+                            "Удалена рекламная кампания:\n" +
+                                    "Название: %s\n" +
+                                    "ID: %d\n" +
+                                    "Удалена пользователем: %s",
+                            campaignName,
+                            campaignId,
+                            username
+                    ))
+                    .type(NotificationType.CAMPAIGN_DELETED)
+                    .recipient("ROLE_ADMIN,ROLE_CAMPAIGN_MANAGER")
+                    .build();
+
+            messageSenderService.sendNotification(notification);
+        } catch (Exception e) {
+            // Логируем ошибку, но не прерываем основной поток выполнения
+            log.error("Ошибка при отправке уведомления об удалении кампании: {}", e.getMessage());
         }
     }
 }

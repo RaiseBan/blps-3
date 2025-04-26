@@ -1,97 +1,71 @@
 package com.example.blps.service.notification;
 
 import com.example.blps.dto.notification.NotificationMessage;
-import com.example.blps.model.notification.Notification;
-import com.example.blps.repository.notification.NotificationRepository;
 import com.example.blps.service.integration.Bitrix24Service;
+import jakarta.resource.ResourceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
+/**
+ * Сервис для прослушивания и обработки уведомлений из очереди.
+ * Отправляет уведомления в Bitrix24 без сохранения в локальную БД.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationListenerService {
 
-    private final NotificationRepository notificationRepository;
     private final Bitrix24Service bitrix24Service;
 
     /**
-     * Обрабатывает входящие уведомления из очереди
-     * 
+     * Обрабатывает входящие уведомления из очереди и отправляет их в Bitrix24
+     *
      * @param message сообщение с уведомлением
      */
     @JmsListener(destination = MessageSenderService.NOTIFICATION_QUEUE)
-    @Transactional
     public void processNotification(NotificationMessage message) {
         log.info("Received notification message: {}", message);
-        
+
         try {
-            // Сохраняем уведомление в базу данных
-            Notification notification = createNotificationFromMessage(message);
-            notificationRepository.save(notification);
-            log.info("Notification saved to database with ID: {}", notification.getId());
-            
-            // Если получатель - администратор или аналитик, также отправляем уведомление в Bitrix24
-            if (isHighPriorityRecipient(message.getRecipient())) {
-                sendToBitrix24(message);
-            }
-            
-            // Отмечаем уведомление как отправленное
-            notification.setIsSent(true);
-            notification.setSentAt(LocalDateTime.now());
-            notificationRepository.save(notification);
-            
+            // Отправляем уведомление в Bitrix24
+            sendToBitrix24(message);
+            log.info("Notification sent to Bitrix24 successfully");
         } catch (Exception e) {
             log.error("Error processing notification", e);
-            // Здесь можно реализовать логику повторной отправки или записи в журнал ошибок
+            // В случае ошибки можно реализовать механизм повторной отправки
+            // или записать в журнал для дальнейшего анализа
         }
     }
 
     /**
-     * Преобразует сообщение в объект уведомления
-     */
-    private Notification createNotificationFromMessage(NotificationMessage message) {
-        Notification notification = new Notification();
-        notification.setTitle(message.getTitle());
-        notification.setMessage(message.getMessage());
-        notification.setType(message.getType());
-        notification.setRecipient(message.getRecipient());
-        notification.setCreatedAt(LocalDateTime.now());
-        notification.setIsRead(false);
-        notification.setIsSent(false);
-        return notification;
-    }
-
-    /**
-     * Определяет, является ли получатель высокоприоритетным (администратор или аналитик)
-     */
-    private boolean isHighPriorityRecipient(String recipient) {
-        return recipient.contains("ADMIN") || recipient.contains("ANALYST");
-    }
-
-    /**
-     * Отправляет уведомление в Bitrix24 через JCA коннектор
+     * Отправляет уведомление в Bitrix24
      */
     private void sendToBitrix24(NotificationMessage message) {
         try {
             // Формируем задачу в Bitrix24
             String title = "Уведомление: " + message.getTitle();
             String description = "Тип: " + message.getType() + "\n" +
-                               "Содержание: " + message.getMessage() + "\n" +
-                               "Время: " + LocalDateTime.now();
-            
+                    "Содержание: " + message.getMessage() + "\n" +
+                    "Время: " + LocalDateTime.now();
+
+            if (message.getRelatedEntityId() != null) {
+                description += "\nСвязанная сущность ID: " + message.getRelatedEntityId();
+            }
+
+            if (message.getAdditionalData() != null && !message.getAdditionalData().isEmpty()) {
+                description += "\nДополнительные данные: " + message.getAdditionalData();
+            }
+
             // Отправляем задачу через коннектор
             bitrix24Service.createTask(title, description, "1");
             log.info("Notification sent to Bitrix24: {}", title);
-        } catch (Exception e) {
+        } catch (ResourceException e) {
             log.error("Error sending notification to Bitrix24", e);
+            throw new RuntimeException("Failed to send notification to Bitrix24", e);
         }
     }
 }
