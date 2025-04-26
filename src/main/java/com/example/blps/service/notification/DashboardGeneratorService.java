@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ public class DashboardGeneratorService {
 
     private final DashboardRepository dashboardRepository;
     private final OurCampaignRepository campaignRepository;
+    private final DashboardSaveService dashboardSaveService;
     private final MetricRepository metricRepository;
     private final ReportService reportService;
     private final MessageSenderService messageSenderService;
@@ -41,7 +43,6 @@ public class DashboardGeneratorService {
      * @param request запрос на генерацию дашборда
      */
     @JmsListener(destination = MessageSenderService.DASHBOARD_GENERATION_QUEUE)
-    @Transactional
     public void generateDashboard(DashboardGenerationRequest request) {
         log.info("Received dashboard generation request: {}", request);
 
@@ -49,7 +50,7 @@ public class DashboardGeneratorService {
             // Генерируем данные для дашборда в зависимости от типа
             ChartData chartData = generateChartData(request);
 
-            // Создаем и сохраняем дашборд
+            // Создаем дашборд
             Dashboard dashboard = new Dashboard();
             dashboard.setTitle(request.getTitle());
             dashboard.setDescription(request.getDescription());
@@ -59,17 +60,16 @@ public class DashboardGeneratorService {
             dashboard.setCreatedAt(LocalDateTime.now());
             dashboard.setIsPublished(request.getAutoPublish() != null && request.getAutoPublish());
 
-            Dashboard savedDashboard = dashboardRepository.save(dashboard);
+            // Используем DashboardSaveService для сохранения
+            Dashboard savedDashboard = dashboardSaveService.saveDashboardEntity(dashboard);
             log.info("Dashboard saved with ID: {}", savedDashboard.getId());
 
             // Отправляем уведомление о создании дашборда
             if (request.getRecipientsGroup() != null && !request.getRecipientsGroup().isEmpty()) {
                 sendDashboardNotification(savedDashboard, request.getRecipientsGroup());
             }
-
         } catch (Exception e) {
             log.error("Error generating dashboard", e);
-            // Можно добавить логику для уведомления об ошибке
         }
     }
 
