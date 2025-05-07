@@ -24,7 +24,7 @@ public class ReferralService {
     private final MetricService metricService;
     private final PlatformTransactionManager transactionManager;
 
-    public void processReferralClick(String referralHash) {
+    public OurCampaign processReferralClick(String referralHash) {
         // Определение транзакции с использованием JTA
         DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
         definition.setName("processReferralClickTransaction");
@@ -34,7 +34,6 @@ public class ReferralService {
         TransactionStatus status = transactionManager.getTransaction(definition);
 
         try {
-            // Бизнес-логика внутри транзакции
             OurCampaign campaign = campaignService.findByReferralHash(referralHash)
                     .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
@@ -42,10 +41,11 @@ public class ReferralService {
             updateMetrics(metric);
             System.out.println("commit");
 
-            // Подтверждение транзакции в случае успеха через Atomikos JTA
             transactionManager.commit(status);
+
+            // Возвращаем кампанию
+            return campaign;
         } catch (Exception e) {
-            // Откат транзакции в случае ошибки через Atomikos JTA
             transactionManager.rollback(status);
             throw e;
         }
