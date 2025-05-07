@@ -3,6 +3,7 @@ package com.example.blps.service.integration;
 import com.example.blps.dto.notification.ChartData;
 import jakarta.resource.ResourceException;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.example.blps.connector.Bitrix24Connector;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,9 @@ public class Bitrix24Service {
 
     public final Bitrix24Connector connector;
     private final ObjectMapper objectMapper;
+
+    @Value("${dashboards.diskfolder.id}")
+    private int folderId;
 
     /**
      * Создает задачу в Битрикс24 на основе кампании.
@@ -70,6 +75,16 @@ public class Bitrix24Service {
         params.put("fields[RESPONSIBLE_ID]", responsibleId);
 
         return connector.executeMethod("tasks.task.add", params);
+    }
+
+    public String uploadFile(String fileName, int folderId, String fileContent) throws ResourceException {
+        Map<String, Object> params = new HashMap<>();
+        params.put("id", folderId);
+        params.put("fileContent", fileContent);
+        params.put("data[NAME]", fileName);
+        params.put("generateUniqueName", true);
+
+        return connector.executeMethod("disk.folder.uploadfile", params);
     }
 
 
@@ -271,19 +286,28 @@ public class Bitrix24Service {
     }
 
     public String createTaskWithImage(String title, String description, String responsibleId,
-                                      byte[] imageData, String fileName) throws ResourceException {
+                                      String imageBase64, String fileName) throws ResourceException {
         try {
             // Сначала создаем задачу
-            String taskId = createTask(title, description, responsibleId);
+            Map<String, Object> resultMap = objectMapper.readValue(createTask(title, description, responsibleId), Map.class);
+
+            Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
+            Map<String, Object> task = (Map<String, Object>) result.get("task");
+            String taskId = (String) task.get("id");
+            log.info("Task created with ID: {}", taskId);
+
+            Map<String, Object> fileMap = objectMapper.readValue(uploadFile(fileName, folderId, imageBase64), Map.class);
+            Map<String, Object> fileResult = (Map<String, Object>) fileMap.get("result");
+            Integer fileId = (Integer) fileResult.get("ID");
+
+            log.info("File loaded with ID: {}", fileId);
+
 
             Map<String, Object> params = new HashMap<>();
-//            params.put("taskId", taskId);
-//            params.put("fileId", imageData);
-//
-//            connector.executeMethod('tasks.task.files.attach', )
+            params.put("taskId", taskId);
+            params.put("fileId", fileId);
 
-            log.info("Task created with ID: {} and image attached", taskId);
-            return taskId;
+            return connector.executeMethod("tasks.task.files.attach", params);
         } catch (Exception e) {
             log.error("Error creating task with image", e);
             throw new ResourceException("Failed to create task with image", e);

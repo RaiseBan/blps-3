@@ -1,3 +1,4 @@
+// src/main/java/com/example/blps/service/notification/ChartGeneratorService.java
 package com.example.blps.service.notification;
 
 import com.example.blps.dto.data.CampaignReportDTO;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 
 @Service
@@ -21,17 +23,17 @@ import java.util.List;
 public class ChartGeneratorService {
 
     /**
-     * Генерирует столбчатую диаграмму эффективности кампаний
+     * Генерирует столбчатую диаграмму эффективности кампаний в формате base64
      */
-    public byte[] generateCampaignPerformanceChart(List<CampaignReportDTO> reports) throws IOException {
+    public String generateCampaignPerformanceChart(List<CampaignReportDTO> reports) throws IOException {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        
+
         for (CampaignReportDTO report : reports) {
             dataset.addValue(report.getClickCount(), "Клики", report.getCampaignName());
             dataset.addValue(report.getCtr().doubleValue(), "CTR %", report.getCampaignName());
             dataset.addValue(report.getConversionRate().doubleValue(), "Конверсия %", report.getCampaignName());
         }
-        
+
         JFreeChart chart = ChartFactory.createBarChart(
                 "Эффективность кампаний",
                 "Кампании",
@@ -42,20 +44,20 @@ public class ChartGeneratorService {
                 true,
                 false
         );
-        
-        return chartToBytes(chart);
+
+        return chartToBase64(chart);
     }
-    
+
     /**
-     * Генерирует круговую диаграмму распределения бюджета
+     * Генерирует круговую диаграмму распределения бюджета в формате base64
      */
-    public byte[] generateBudgetDistributionChart(List<CampaignReportDTO> reports) throws IOException {
+    public String generateBudgetDistributionChart(List<CampaignReportDTO> reports) throws IOException {
         DefaultPieDataset dataset = new DefaultPieDataset();
-        
+
         for (CampaignReportDTO report : reports) {
             dataset.setValue(report.getCampaignName(), report.getBudget().doubleValue());
         }
-        
+
         JFreeChart chart = ChartFactory.createPieChart(
                 "Распределение бюджета",
                 dataset,
@@ -63,20 +65,20 @@ public class ChartGeneratorService {
                 true,
                 false
         );
-        
-        return chartToBytes(chart);
+
+        return chartToBase64(chart);
     }
-    
+
     /**
-     * Генерирует линейный график ROI
+     * Генерирует линейный график ROI в формате base64
      */
-    public byte[] generateRoiChart(List<CampaignReportDTO> reports) throws IOException {
+    public String generateRoiChart(List<CampaignReportDTO> reports) throws IOException {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        
+
         for (CampaignReportDTO report : reports) {
             dataset.addValue(report.getRoi().doubleValue(), "ROI", report.getCampaignName());
         }
-        
+
         JFreeChart chart = ChartFactory.createLineChart(
                 "ROI по кампаниям",
                 "Кампании",
@@ -87,13 +89,14 @@ public class ChartGeneratorService {
                 true,
                 false
         );
-        
-        return chartToBytes(chart);
+
+        return chartToBase64(chart);
     }
-    
-    private byte[] chartToBytes(JFreeChart chart) throws IOException {
+
+    private String chartToBase64(JFreeChart chart) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ChartUtilities.writeChartAsPNG(baos, chart, 800, 600);
-        return baos.toByteArray();
+        byte[] bytes = baos.toByteArray();
+        return Base64.getEncoder().encodeToString(bytes);
     }
 }

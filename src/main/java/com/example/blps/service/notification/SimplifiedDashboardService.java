@@ -1,8 +1,7 @@
-// Обновленная версия SimplifiedDashboardService
+// src/main/java/com/example/blps/service/notification/SimplifiedDashboardService.java
 package com.example.blps.service.notification;
 
 import com.example.blps.dto.data.CampaignReportDTO;
-import com.example.blps.dto.notification.ChartData;
 import com.example.blps.dto.notification.DashboardGenerationRequest;
 import com.example.blps.dto.notification.NotificationMessage;
 import com.example.blps.model.notification.NotificationType;
@@ -35,11 +34,11 @@ public class SimplifiedDashboardService {
             // 1. Получаем данные для графиков
             List<CampaignReportDTO> reports = reportService.getCampaignsReportData();
 
-            // 2. Генерируем графики
-            byte[] chartImage = generateChart(request.getType(), reports);
+            // 2. Генерируем графики в формате base64
+            String chartBase64 = generateChart(request.getType(), reports);
 
             // 3. Отправляем в Bitrix24
-            sendToBitrix24(request, chartImage);
+            sendToBitrix24(request, chartBase64);
 
             // 4. Отправляем уведомление об успешной обработке
             sendSuccessNotification(request);
@@ -51,7 +50,7 @@ public class SimplifiedDashboardService {
         }
     }
 
-    private byte[] generateChart(com.example.blps.model.notification.DashboardType type,
+    private String generateChart(com.example.blps.model.notification.DashboardType type,
                                  List<CampaignReportDTO> reports) throws IOException {
         switch (type) {
             case CAMPAIGN_PERFORMANCE:
@@ -62,31 +61,34 @@ public class SimplifiedDashboardService {
                 return chartGeneratorService.generateRoiChart(reports);
             case WEEKLY_SUMMARY:
             case MONTHLY_REPORT:
+                // По умолчанию для отчетов используем график эффективности
                 return chartGeneratorService.generateCampaignPerformanceChart(reports);
             default:
                 throw new IllegalArgumentException("Unsupported dashboard type: " + type);
         }
     }
 
-    private void sendToBitrix24(DashboardGenerationRequest request, byte[] chartImage) {
+    private void sendToBitrix24(DashboardGenerationRequest request, String chartBase64) {
         try {
             String title = "Дашборд: " + request.getTitle();
 
-            // Формируем описание для задачи
+            // Формируем HTML описание с встроенным изображением
             StringBuilder description = new StringBuilder();
-            description.append("Тип: ").append(request.getType()).append("\n");
-            description.append("Описание: ").append(request.getDescription()).append("\n");
-            description.append("Период: ").append(request.getStartDate())
-                    .append(" - ").append(request.getEndDate()).append("\n");
-            description.append("Создан: ").append(LocalDateTime.now()).append("\n\n");
+            description.append("<h3>").append(request.getTitle()).append("</h3>");
+            description.append("<p><b>Тип:</b> ").append(request.getType()).append("</p>");
+            description.append("<p><b>Описание:</b> ").append(request.getDescription()).append("</p>");
+            description.append("<p><b>Период:</b> ").append(request.getStartDate())
+                    .append(" - ").append(request.getEndDate()).append("</p>");
+            description.append("<p><b>Создан:</b> ").append(LocalDateTime.now()).append("</p>");
+
             description.append("График прикреплен к задаче как файл.");
 
-            // Отправляем задачу с изображением в Bitrix24
+            // Отправляем задачу с HTML содержимым в Bitrix24
             String taskId = bitrix24Service.createTaskWithImage(
                     title,
                     description.toString(),
                     "1",
-                    chartImage,
+                    chartBase64,
                     "dashboard_" + request.getType() + ".png"
             );
 
