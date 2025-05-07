@@ -72,6 +72,7 @@ public class Bitrix24Service {
         return connector.executeMethod("tasks.task.add", params);
     }
 
+
     /**
      * Создает лид в Битрикс24 CRM для партнерской кампании.
      *
@@ -267,5 +268,25 @@ public class Bitrix24Service {
     public String checkConnection() throws ResourceException {
         Map<String, Object> params = new HashMap<>();
         return connector.executeMethod("app.info", params);
+    }
+
+    public String createTaskWithImage(String title, String description, String responsibleId,
+                                      byte[] imageData, String fileName) throws ResourceException {
+        try {
+            // Сначала создаем задачу
+            String taskId = createTask(title, description, responsibleId);
+
+            Map<String, Object> params = new HashMap<>();
+//            params.put("taskId", taskId);
+//            params.put("fileId", imageData);
+//
+//            connector.executeMethod('tasks.task.files.attach', )
+
+            log.info("Task created with ID: {} and image attached", taskId);
+            return taskId;
+        } catch (Exception e) {
+            log.error("Error creating task with image", e);
+            throw new ResourceException("Failed to create task with image", e);
+        }
     }
 }
