@@ -48,20 +48,12 @@ public class MessageSenderService {
     public void sendDashboardGenerationRequest(DashboardGenerationRequest request) {
         log.info("Sending dashboard generation request to queue: {}", request);
         try {
-            // Гарантируем, что запрос будет правильно сериализован
-            String jsonRequest = objectMapper.writeValueAsString(request);
-            log.debug("Serialized request: {}", jsonRequest);
-
-            // Проверяем, что десериализация работает корректно
-            DashboardGenerationRequest test = objectMapper.readValue(jsonRequest, DashboardGenerationRequest.class);
-            log.debug("Deserialization test successful: {}", test);
-
-            // Отправляем сообщение в очередь
-            jmsTemplate.convertAndSend(DASHBOARD_GENERATION_QUEUE, request);
+            jmsTemplate.convertAndSend(DASHBOARD_GENERATION_QUEUE, request, message -> {
+                // Добавляем свойство для JMS селектора
+                message.setStringProperty("dashboardType", request.getType().name());
+                return message;
+            });
             log.info("Dashboard generation request sent successfully");
-        } catch (JsonProcessingException e) {
-            log.error("Error serializing dashboard generation request", e);
-            throw new RuntimeException("Failed to serialize dashboard generation request", e);
         } catch (Exception e) {
             log.error("Error sending dashboard generation request to queue", e);
             throw new RuntimeException("Failed to send dashboard generation request", e);

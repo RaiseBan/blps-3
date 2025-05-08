@@ -11,6 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -25,28 +29,42 @@ public class SimplifiedDashboardService {
     private final Bitrix24Service bitrix24Service;
     private final MessageSenderService messageSenderService;
     private final ChartGeneratorService chartGeneratorService;
+    private final PlatformTransactionManager transactionManager;
 
-    @JmsListener(destination = MessageSenderService.DASHBOARD_GENERATION_QUEUE)
     public void processDashboardRequest(DashboardGenerationRequest request) {
-        log.info("Processing dashboard generation request: {}", request);
+        // Определение транзакции
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+        definition.setName("processDashboardTransaction");
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        definition.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
+
+        TransactionStatus status = transactionManager.getTransaction(definition);
 
         try {
-            // 1. Получаем данные для графиков
+            log.info("Processing dashboard generation request in transaction: {}", request);
+
+            // 1. Получаем данные для графиков (участвует в транзакции)
             List<CampaignReportDTO> reports = reportService.getCampaignsReportData();
 
-            // 2. Генерируем графики в формате base64
+            // 2. Генерируем графики
             String chartBase64 = generateChart(request.getType(), reports);
 
-            // 3. Отправляем в Bitrix24
+            // 3. Отправляем в Bitrix24 (участвует в транзакции через JCA)
             sendToBitrix24(request, chartBase64);
 
-            // 4. Отправляем уведомление об успешной обработке
+            // Коммитим транзакцию
+            transactionManager.commit(status);
+
+            // 4. Отправляем уведомление (вне транзакции)
             sendSuccessNotification(request);
 
             log.info("Dashboard generation completed successfully");
         } catch (Exception e) {
-            log.error("Error generating dashboard", e);
+            // Откатываем транзакцию
+            transactionManager.rollback(status);
+            log.error("Error generating dashboard, transaction rolled back", e);
             sendErrorNotification(request, e);
+            throw new RuntimeException("Dashboard generation failed", e);
         }
     }
 

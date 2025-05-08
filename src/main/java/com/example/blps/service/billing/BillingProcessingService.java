@@ -47,15 +47,16 @@ public class BillingProcessingService {
             
             // Создаем счет в Bitrix24 CRM
             java.util.Map<String, Object> params = new java.util.HashMap<>();
+            params.put("entityTypeId", "31");
             params.put("fields[TITLE]", "Счет: " + billingData.getCampaignName());
             params.put("fields[OPPORTUNITY]", billingData.getTotalSpent().toString());
             params.put("fields[CURRENCY_ID]", "RUB");
-            params.put("fields[STATUS_ID]", "NEW");
+            params.put("fields[STAGE_ID]", "NEW");
             params.put("fields[COMMENTS]", invoiceData);
 
             log.info("ОТПРАВКА СУКИИИИИИИИИИИИИИИИИИИ");
             
-            String result = bitrix24Service.connector.executeMethod("crm.invoice.add", params);
+            String result = bitrix24Service.connector.executeMethod("crm.item.add", params);
             log.info("Invoice created in Bitrix24: {}", result);
             
         } catch (Exception e) {
