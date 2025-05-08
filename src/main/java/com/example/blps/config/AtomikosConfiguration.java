@@ -55,6 +55,8 @@ public class AtomikosConfiguration {
             UserTransaction userTransaction,
             TransactionManager atomikosTransactionManager) {
 
-        return new JtaTransactionManager(userTransaction, atomikosTransactionManager);
+        JtaTransactionManager jtaTransactionManager = new JtaTransactionManager(userTransaction, atomikosTransactionManager);
+        jtaTransactionManager.setAllowCustomIsolationLevels(true);
+        return jtaTransactionManager;
     }
 }
