@@ -27,7 +27,7 @@ public class SimplifiedDashboardService {
     private final ChartGeneratorService chartGeneratorService;
 
     public void processDashboardRequest(DashboardGenerationRequest request) {
-        log.info("Processing dashboard generation request: {}", request);
+        log.info("=== SimplifiedDashboardService processing request: {} ===", request);
 
         try {
             // 1. Получаем данные для графиков

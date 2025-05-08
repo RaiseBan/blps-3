@@ -3,10 +3,12 @@ package com.example.blps.service.notification;
 
 import com.example.blps.dto.notification.DashboardGenerationRequest;
 import com.example.blps.model.notification.DashboardType;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -30,7 +32,7 @@ public class AnalyticsDashboardService {
             selector = "dashboardType = 'ANALYTICS_REPORT'"
     )
     public void processAnalyticsDashboard(DashboardGenerationRequest request) {
-        log.info("Analytics Node: Processing dashboard request: {}", request);
+        log.info("Analytics Node: Processing dashboard request in instance: {}", this.hashCode());
         dashboardService.processDashboardRequest(request);
     }
 }

@@ -13,21 +13,19 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 
 // src/main/java/com/example/blps/service/scheduler/AnalyticsReportScheduler.java
+// src/main/java/com/example/blps/service/scheduler/AnalyticsReportScheduler.java
 @Component
-@ConditionalOnProperty(name = "analytics.node.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "scheduler.master.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class AnalyticsReportScheduler {
-    
+
     private final MessageSenderService messageSenderService;
-    
-    @PostConstruct
-    public void generateInitialReport() {
-        generateAnalyticsReport();
-    }
-    
-    @Scheduled(fixedRate = 120000)
+
+    // Используем fixedDelay вместо fixedRate и добавляем initialDelay
+    @Scheduled(initialDelay = 120000, fixedDelay = 120000) // 2 минуты задержка перед первым запуском
     public void generateAnalyticsReport() {
+        log.info("=== AnalyticsReportScheduler generateAnalyticsReport() START ===");
         log.info("Master node: Generating scheduled analytics report");
 
         DashboardGenerationRequest request = DashboardGenerationRequest.builder()
@@ -41,6 +39,8 @@ public class AnalyticsReportScheduler {
                 .createdBy("system-scheduler")
                 .build();
 
+        log.info("=== Sending analytics report request: {} ===", request);
         messageSenderService.sendDashboardGenerationRequest(request);
+        log.info("=== AnalyticsReportScheduler generateAnalyticsReport() END ===");
     }
 }

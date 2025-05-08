@@ -13,21 +13,20 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 
 // src/main/java/com/example/blps/service/scheduler/FinancialReportScheduler.java
+// src/main/java/com/example/blps/service/scheduler/FinancialReportScheduler.java
 @Component
 @ConditionalOnProperty(name = "financial.node.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class FinancialReportScheduler {
-    
+
     private final MessageSenderService messageSenderService;
     
-    @PostConstruct
-    public void generateInitialReport() {
-        generateFinancialReport();
-    }
 
-    @Scheduled(fixedRate = 120000) // 5 минут
+    // Используем fixedDelay вместо fixedRate и добавляем initialDelay
+    @Scheduled(initialDelay = 120000, fixedDelay = 120000) // 2 минуты задержка перед первым запуском
     public void generateFinancialReport() {
+        log.info("=== FinancialReportScheduler generateFinancialReport() START ===");
         log.info("Master node: Generating scheduled financial report");
 
         DashboardGenerationRequest request = DashboardGenerationRequest.builder()
@@ -41,6 +40,8 @@ public class FinancialReportScheduler {
                 .createdBy("system-scheduler")
                 .build();
 
+        log.info("=== Sending financial report request: {} ===", request);
         messageSenderService.sendDashboardGenerationRequest(request);
+        log.info("=== FinancialReportScheduler generateFinancialReport() END ===");
     }
 }

@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 /**
  * Сервис для отправки сообщений в очереди JMS
  */
@@ -49,8 +51,8 @@ public class MessageSenderService {
         log.info("Sending dashboard generation request to queue: {}", request);
         try {
             jmsTemplate.convertAndSend(DASHBOARD_GENERATION_QUEUE, request, message -> {
-                // Добавляем свойство для JMS селектора
                 message.setStringProperty("dashboardType", request.getType().name());
+                message.setStringProperty("messageId", UUID.randomUUID().toString()); // Добавить ID
                 return message;
             });
             log.info("Dashboard generation request sent successfully");
