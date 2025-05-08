@@ -20,7 +20,7 @@ public class AnalyticsReportScheduler {
 
     private final MessageSenderService messageSenderService;
 
-    @Scheduled(initialDelay = 120000, fixedDelay = 120000)
+    @Scheduled(initialDelay = 60000, fixedDelay = 60000)
     public void generateAnalyticsReport() {
         log.info("=== AnalyticsReportScheduler generateAnalyticsReport() START ===");
         log.info("Master node: Generating scheduled analytics report");

@@ -5,6 +5,7 @@ import com.example.blps.repository.data.OurCampaignRepository;
 import com.example.blps.service.integration.Bitrix24Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
+@ConditionalOnProperty(name = "financial.node.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class BillingScheduler {
@@ -21,7 +23,7 @@ public class BillingScheduler {
     private final Bitrix24Service bitrix24Service;
     
     // Каждые 5 минут
-    @Scheduled(fixedDelay = 300000, initialDelay = 10000)
+    @Scheduled(fixedDelay = 120000, initialDelay = 10000)
     public void generateBills() {
         log.info("=== ЗАПУСК ГЕНЕРАЦИИ СЧЕТОВ ===");
         log.info("Время: {}", LocalDateTime.now());

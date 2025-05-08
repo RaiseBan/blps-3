@@ -13,6 +13,7 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
@@ -21,13 +22,14 @@ import jakarta.annotation.PostConstruct;
  * Планировщик для синхронизации геоданных с Bitrix24
  */
 @Component
+@ConditionalOnProperty(name = "scheduler.master.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class GeoDataSyncScheduler {
     
     private final Scheduler scheduler;
     
-    @Value("${geo.sync.interval.minutes:5}")
+    @Value("${geo.sync.interval.minutes:2}")
     private int syncIntervalMinutes;
     
     @PostConstruct
