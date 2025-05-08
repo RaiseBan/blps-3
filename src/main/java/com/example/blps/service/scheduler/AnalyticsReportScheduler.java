@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 
-// src/main/java/com/example/blps/service/scheduler/AnalyticsReportScheduler.java
-// src/main/java/com/example/blps/service/scheduler/AnalyticsReportScheduler.java
 @Component
 @ConditionalOnProperty(name = "scheduler.master.enabled", havingValue = "true")
 @RequiredArgsConstructor
@@ -22,8 +20,7 @@ public class AnalyticsReportScheduler {
 
     private final MessageSenderService messageSenderService;
 
-    // Используем fixedDelay вместо fixedRate и добавляем initialDelay
-    @Scheduled(initialDelay = 120000, fixedDelay = 120000) // 2 минуты задержка перед первым запуском
+    @Scheduled(initialDelay = 120000, fixedDelay = 120000)
     public void generateAnalyticsReport() {
         log.info("=== AnalyticsReportScheduler generateAnalyticsReport() START ===");
         log.info("Master node: Generating scheduled analytics report");

@@ -1,153 +1,83 @@
 package com.example.blps.service.scheduler;
 
-import com.example.blps.dto.billing.BillingRequest;
-import com.example.blps.dto.billing.BillingType;
 import com.example.blps.model.dataEntity.OurCampaign;
 import com.example.blps.repository.data.OurCampaignRepository;
-import com.example.blps.service.billing.BillingSenderService;
+import com.example.blps.service.integration.Bitrix24Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.Job;
-import org.quartz.JobBuilder;
-import org.quartz.JobDetail;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.Scheduler;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Планировщик для автоматической генерации счетов
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class BillingScheduler {
     
-    private final Scheduler scheduler;
+    private final OurCampaignRepository campaignRepository;
+    private final Bitrix24Service bitrix24Service;
     
-    @PostConstruct
-    public void initializeJobs() {
+    // Каждые 5 минут
+    @Scheduled(fixedDelay = 300000, initialDelay = 10000)
+    public void generateBills() {
+        log.info("=== ЗАПУСК ГЕНЕРАЦИИ СЧЕТОВ ===");
+        log.info("Время: {}", LocalDateTime.now());
+        
         try {
-            // Ежедневная генерация счетов в 00:00
-            JobDetail dailyJob = JobBuilder.newJob(DailyBillingJob.class)
-                    .withIdentity("dailyBillingJob", "billingGroup")
-                    .storeDurably()
-                    .build();
+            List<OurCampaign> campaigns = campaignRepository.findAll();
+            log.info("Найдено кампаний: {}", campaigns.size());
             
-            Trigger dailyTrigger = TriggerBuilder.newTrigger()
-                    .withIdentity("dailyBillingTrigger", "billingGroup")
-                    .withSchedule(
-                            org.quartz.CronScheduleBuilder.cronSchedule("0 0 0 * * ?")
-                    )
-                    .build();
+            for (OurCampaign campaign : campaigns) {
+                if (campaign.getMetric() != null && campaign.getMetric().getClickCount() > 0) {
+                    generateBillForCampaign(campaign);
+                }
+            }
             
-            scheduler.scheduleJob(dailyJob, dailyTrigger);
-            log.info("Daily billing job scheduled");
+            log.info("=== ГЕНЕРАЦИЯ СЧЕТОВ ЗАВЕРШЕНА ===");
+        } catch (Exception e) {
+            log.error("Ошибка генерации счетов", e);
+        }
+    }
+    
+    private void generateBillForCampaign(OurCampaign campaign) {
+        try {
+            log.info("Генерация счета для кампании: {}", campaign.getCampaignName());
             
-            // Ежемесячная генерация счетов 1-го числа в 02:00
-            JobDetail monthlyJob = JobBuilder.newJob(MonthlyBillingJob.class)
-                    .withIdentity("monthlyBillingJob", "billingGroup")
-                    .storeDurably()
-                    .build();
+            // Простой расчет: количество кликов * 0.5 рубля
+            BigDecimal amount = new BigDecimal(campaign.getMetric().getClickCount())
+                    .multiply(new BigDecimal("0.5"));
             
-            Trigger monthlyTrigger = TriggerBuilder.newTrigger()
-                    .withIdentity("monthlyBillingTrigger", "billingGroup")
-                    .withSchedule(
-                            org.quartz.CronScheduleBuilder.cronSchedule("0 0 2 1 * ?")
-                    )
-                    .build();
+            // Формируем текст счета
+            String invoiceText = String.format(
+                "СЧЕТ НА ОПЛАТУ\n" +
+                "================\n" +
+                "Кампания: %s\n" +
+                "Кликов: %d\n" +
+                "Стоимость за клик: 0.50 руб.\n" +
+                "ИТОГО: %.2f руб.\n" +
+                "Дата: %s",
+                campaign.getCampaignName(),
+                campaign.getMetric().getClickCount(),
+                amount,
+                LocalDateTime.now()
+            );
             
-            scheduler.scheduleJob(monthlyJob, monthlyTrigger);
-            log.info("Monthly billing job scheduled");
+            // Отправляем в Bitrix24
+            java.util.Map<String, Object> params = new java.util.HashMap<>();
+            params.put("fields[TITLE]", "Счет: " + campaign.getCampaignName());
+            params.put("fields[OPPORTUNITY]", amount.toString());
+            params.put("fields[CURRENCY_ID]", "RUB");
+            params.put("fields[STATUS_ID]", "NEW");
+            params.put("fields[COMMENTS]", invoiceText);
+            
+            String result = bitrix24Service.connector.executeMethod("crm.invoice.add", params);
+            log.info("Счет создан в Bitrix24: {}", result);
             
         } catch (Exception e) {
-            log.error("Error scheduling billing jobs", e);
-        }
-    }
-    
-    /**
-     * Job для ежедневной генерации счетов
-     */
-    @RequiredArgsConstructor
-    @Slf4j
-    public static class DailyBillingJob implements Job {
-        
-        private final OurCampaignRepository campaignRepository;
-        private final BillingSenderService billingSenderService;
-        
-        @Override
-        public void execute(JobExecutionContext context) throws JobExecutionException {
-            log.info("Starting daily billing job");
-            
-            try {
-                LocalDate yesterday = LocalDate.now().minusDays(1);
-                List<OurCampaign> campaigns = campaignRepository.findAll();
-                
-                for (OurCampaign campaign : campaigns) {
-                    BillingRequest request = BillingRequest.builder()
-                            .campaignId(campaign.getId())
-                            .periodStart(yesterday)
-                            .periodEnd(yesterday)
-                            .requestedBy("system-scheduler")
-                            .billingType(BillingType.DAILY)
-                            .build();
-                    
-                    billingSenderService.sendBillingRequest(request);
-                }
-                
-                log.info("Daily billing job completed successfully");
-            } catch (Exception e) {
-                log.error("Error executing daily billing job", e);
-                throw new JobExecutionException(e);
-            }
-        }
-    }
-    
-    /**
-     * Job для ежемесячной генерации счетов
-     */
-    @RequiredArgsConstructor
-    @Slf4j
-    public static class MonthlyBillingJob implements Job {
-        
-        private final OurCampaignRepository campaignRepository;
-        private final BillingSenderService billingSenderService;
-        
-        @Override
-        public void execute(JobExecutionContext context) throws JobExecutionException {
-            log.info("Starting monthly billing job");
-            
-            try {
-                LocalDate lastMonth = LocalDate.now().minusMonths(1);
-                LocalDate startOfMonth = lastMonth.withDayOfMonth(1);
-                LocalDate endOfMonth = lastMonth.withDayOfMonth(lastMonth.lengthOfMonth());
-                
-                List<OurCampaign> campaigns = campaignRepository.findAll();
-                
-                for (OurCampaign campaign : campaigns) {
-                    BillingRequest request = BillingRequest.builder()
-                            .campaignId(campaign.getId())
-                            .periodStart(startOfMonth)
-                            .periodEnd(endOfMonth)
-                            .requestedBy("system-scheduler")
-                            .billingType(BillingType.MONTHLY)
-                            .build();
-                    
-                    billingSenderService.sendBillingRequest(request);
-                }
-                
-                log.info("Monthly billing job completed successfully");
-            } catch (Exception e) {
-                log.error("Error executing monthly billing job", e);
-                throw new JobExecutionException(e);
-            }
+            log.error("Ошибка создания счета для кампании {}", campaign.getCampaignName(), e);
         }
     }
 }

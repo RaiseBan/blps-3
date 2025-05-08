@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 
-// src/main/java/com/example/blps/service/scheduler/FinancialReportScheduler.java
-// src/main/java/com/example/blps/service/scheduler/FinancialReportScheduler.java
 @Component
 @ConditionalOnProperty(name = "financial.node.enabled", havingValue = "true")
 @RequiredArgsConstructor
@@ -21,7 +19,7 @@ import java.time.LocalDate;
 public class FinancialReportScheduler {
 
     private final MessageSenderService messageSenderService;
-    
+
 
     // Используем fixedDelay вместо fixedRate и добавляем initialDelay
     @Scheduled(initialDelay = 120000, fixedDelay = 120000) // 2 минуты задержка перед первым запуском

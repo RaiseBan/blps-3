@@ -20,6 +20,7 @@ import org.springframework.jms.support.converter.MessageType;
 
 import jakarta.jms.ConnectionFactory;
 
+// src/main/java/com/example/blps/config/ActiveMQConfig.java
 @Configuration
 @EnableJms
 @Slf4j

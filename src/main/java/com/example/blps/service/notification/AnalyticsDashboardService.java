@@ -4,6 +4,7 @@ package com.example.blps.service.notification;
 import com.example.blps.dto.notification.DashboardGenerationRequest;
 import com.example.blps.model.notification.DashboardType;
 import jakarta.annotation.PostConstruct;
+import jakarta.jms.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,21 +19,33 @@ import java.util.List;
  * Сервис для обработки аналитических дашбордов (узел 1)
  */
 // src/main/java/com/example/blps/service/notification/AnalyticsDashboardService.java
+// src/main/java/com/example/blps/service/notification/AnalyticsDashboardService.java
 @Service
 @ConditionalOnProperty(name = "analytics.node.enabled", havingValue = "true")
-@RequiredArgsConstructor
 @Slf4j
-public class AnalyticsDashboardService {
+public class AnalyticsDashboardService extends BaseDashboardService {
 
-    private final SimplifiedDashboardService dashboardService;
+    public AnalyticsDashboardService(SimplifiedDashboardService dashboardService) {
+        super(dashboardService);
+    }
+
+    @PostConstruct
+    public void init() {
+        log.info("=== AnalyticsDashboardService created: {} ===", this.hashCode());
+    }
 
     @JmsListener(
             destination = MessageSenderService.DASHBOARD_GENERATION_QUEUE,
             containerFactory = "jmsListenerContainerFactory",
-            selector = "dashboardType = 'ANALYTICS_REPORT'"
+            selector = "dashboardType = 'ANALYTICS_REPORT'",
+            id = "analytics-dashboard-listener"
     )
-    public void processAnalyticsDashboard(DashboardGenerationRequest request) {
-        log.info("Analytics Node: Processing dashboard request in instance: {}", this.hashCode());
-        dashboardService.processDashboardRequest(request);
+    public void processAnalyticsDashboard(DashboardGenerationRequest request, Message message) {
+        processDashboard(request, message);
+    }
+
+    @Override
+    protected String getNodeType() {
+        return "Analytics Node";
     }
 }
