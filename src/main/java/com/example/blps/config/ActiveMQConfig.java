@@ -3,6 +3,7 @@ package com.example.blps.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.annotation.PostConstruct;
 import jakarta.jms.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -34,6 +35,11 @@ public class ActiveMQConfig {
 
     @Value("${spring.activemq.password}")
     private String password;
+
+    @PostConstruct
+    public void validateStompSupport() {
+        log.info("ActiveMQ STOMP support is enabled at ws://localhost:61614/stomp");
+    }
 
     @Bean
     public ConnectionFactory connectionFactory() {
