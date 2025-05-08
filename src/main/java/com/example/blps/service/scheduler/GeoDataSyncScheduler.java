@@ -29,7 +29,7 @@ public class GeoDataSyncScheduler {
     
     private final Scheduler scheduler;
     
-    @Value("${geo.sync.interval.minutes:2}")
+    @Value("${geo.sync.interval.minutes}")
     private int syncIntervalMinutes;
     
     @PostConstruct

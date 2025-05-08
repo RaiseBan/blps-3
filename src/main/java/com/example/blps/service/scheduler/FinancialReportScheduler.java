@@ -22,7 +22,7 @@ public class FinancialReportScheduler {
 
 
     // Используем fixedDelay вместо fixedRate и добавляем initialDelay
-    @Scheduled(initialDelay = 60000, fixedDelay = 60000) // 2 минуты задержка перед первым запуском
+    @Scheduled(initialDelay = 300000, fixedDelay = 300000) // 2 минуты задержка перед первым запуском
     public void generateFinancialReport() {
         log.info("=== FinancialReportScheduler generateFinancialReport() START ===");
         log.info("Master node: Generating scheduled financial report");
