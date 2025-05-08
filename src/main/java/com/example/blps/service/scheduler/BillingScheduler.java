@@ -5,14 +5,13 @@ import com.example.blps.dto.billing.BillingType;
 import com.example.blps.model.dataEntity.OurCampaign;
 import com.example.blps.repository.data.OurCampaignRepository;
 import com.example.blps.service.billing.BillingSenderService;
-import com.example.blps.service.integration.Bitrix24Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
+import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,44 +22,75 @@ import java.util.List;
 @Slf4j
 public class BillingScheduler {
 
-    private final OurCampaignRepository campaignRepository;
-    private final BillingSenderService billingSenderService;
+    private final Scheduler scheduler;
 
-    @Scheduled(fixedDelay = 120000, initialDelay = 10000)
-    public void generateBills() {
-        log.info("=== ЗАПУСК ГЕНЕРАЦИИ СЧЕТОВ ===");
-        log.info("Время: {}", LocalDateTime.now());
-
+    @PostConstruct
+    public void initializeJob() {
         try {
-            List<OurCampaign> campaigns = campaignRepository.findAll();
-            log.info("Найдено кампаний: {}", campaigns.size());
+            JobDetail jobDetail = JobBuilder.newJob(BillingJob.class)
+                    .withIdentity("billingJob", "billingGroup")
+                    .storeDurably()
+                    .build();
 
-            for (OurCampaign campaign : campaigns) {
-                if (shouldGenerateBill(campaign)) {
-                    BillingRequest request = createBillingRequest(campaign);
-                    billingSenderService.sendBillingRequest(request);
-                    log.info("Отправлен запрос на генерацию счета для кампании: {}",
-                            campaign.getCampaignName());
-                }
-            }
+            Trigger trigger = TriggerBuilder.newTrigger()
+                    .withIdentity("billingTrigger", "billingGroup")
+                    .withSchedule(SimpleScheduleBuilder.simpleSchedule()
+                            .withIntervalInMinutes(2) // каждые 2 минуты
+                            .repeatForever())
+                    .startAt(DateBuilder.futureDate(10, DateBuilder.IntervalUnit.SECOND))
+                    .build();
 
-            log.info("=== ОТПРАВКА ЗАПРОСОВ НА ГЕНЕРАЦИЮ СЧЕТОВ ЗАВЕРШЕНА ===");
+            scheduler.scheduleJob(jobDetail, trigger);
+            log.info("Billing job scheduled with 2 minutes interval");
+
         } catch (Exception e) {
-            log.error("Ошибка при отправке запросов на генерацию счетов", e);
+            log.error("Error scheduling billing job", e);
         }
     }
 
-    private boolean shouldGenerateBill(OurCampaign campaign) {
-        return campaign.getMetric() != null && campaign.getMetric().getClickCount() > 0;
-    }
+    @RequiredArgsConstructor
+    @Slf4j
+    public static class BillingJob extends BaseQuartzJob {
 
-    private BillingRequest createBillingRequest(OurCampaign campaign) {
-        return BillingRequest.builder()
-                .campaignId(campaign.getId())
-                .periodStart(LocalDate.now().minusMonths(1))
-                .periodEnd(LocalDate.now())
-                .requestedBy("system-scheduler")
-                .billingType(BillingType.MONTHLY)
-                .build();
+        @Override
+        protected void executeInternal(JobExecutionContext context) {
+            log.info("=== ЗАПУСК ГЕНЕРАЦИИ СЧЕТОВ ===");
+            log.info("Время: {}", LocalDateTime.now());
+
+            try {
+                OurCampaignRepository campaignRepository = applicationContext.getBean(OurCampaignRepository.class);
+                BillingSenderService billingSenderService = applicationContext.getBean(BillingSenderService.class);
+
+                List<OurCampaign> campaigns = campaignRepository.findAll();
+                log.info("Найдено кампаний: {}", campaigns.size());
+
+                for (OurCampaign campaign : campaigns) {
+                    if (shouldGenerateBill(campaign)) {
+                        BillingRequest request = createBillingRequest(campaign);
+                        billingSenderService.sendBillingRequest(request);
+                        log.info("Отправлен запрос на генерацию счета для кампании: {}",
+                                campaign.getCampaignName());
+                    }
+                }
+
+                log.info("=== ОТПРАВКА ЗАПРОСОВ НА ГЕНЕРАЦИЮ СЧЕТОВ ЗАВЕРШЕНА ===");
+            } catch (Exception e) {
+                log.error("Ошибка при отправке запросов на генерацию счетов", e);
+            }
+        }
+
+        private boolean shouldGenerateBill(OurCampaign campaign) {
+            return campaign.getMetric() != null && campaign.getMetric().getClickCount() > 0;
+        }
+
+        private BillingRequest createBillingRequest(OurCampaign campaign) {
+            return BillingRequest.builder()
+                    .campaignId(campaign.getId())
+                    .periodStart(LocalDate.now().minusMonths(1))
+                    .periodEnd(LocalDate.now())
+                    .requestedBy("system-scheduler")
+                    .billingType(BillingType.MONTHLY)
+                    .build();
+        }
     }
 }
