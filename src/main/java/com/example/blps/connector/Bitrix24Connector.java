@@ -67,25 +67,4 @@ public class Bitrix24Connector {
             }
         }
     }
-
-    public String createTask(String title, String description, String responsibleId) throws ResourceException {
-        java.util.Map<String, Object> params = new java.util.HashMap<>();
-        params.put("fields[TITLE]", title);
-        params.put("fields[DESCRIPTION]", description);
-        params.put("fields[RESPONSIBLE_ID]", responsibleId);
-
-        return executeMethod("tasks.task.add", params);
-    }
-
-    public String createLead(String title, String name, String email, String phone) throws ResourceException {
-        java.util.Map<String, Object> params = new java.util.HashMap<>();
-        params.put("fields[TITLE]", title);
-        params.put("fields[NAME]", name);
-        params.put("fields[EMAIL][0][VALUE]", email);
-        params.put("fields[EMAIL][0][VALUE_TYPE]", "WORK");
-        params.put("fields[PHONE][0][VALUE]", phone);
-        params.put("fields[PHONE][0][VALUE_TYPE]", "WORK");
-
-        return executeMethod("crm.lead.add", params);
-    }
 }
