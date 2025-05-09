@@ -9,12 +9,15 @@ import com.example.blps.service.data.ReportService;
 import com.example.blps.service.integration.Bitrix24Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import static com.example.blps.model.notification.DashboardType.ANALYTICS_REPORT;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,12 @@ public class SimplifiedDashboardService {
     private final Bitrix24Service bitrix24Service;
     private final MessageSenderService messageSenderService;
     private final ChartGeneratorService chartGeneratorService;
+
+    @Value("${employees.seo.id}")
+    private String seoId;
+
+    @Value("${employees.sto.id}")
+    private String stoId;
 
     public void processDashboardRequest(DashboardGenerationRequest request) {
         log.info("=== SimplifiedDashboardService processing request: {} ===", request);
@@ -77,7 +86,9 @@ public class SimplifiedDashboardService {
 
         report.append("Сгенерировано: ").append(LocalDateTime.now().format(formatter)).append("\n\n");
 
-        if (type == com.example.blps.model.notification.DashboardType.ANALYTICS_REPORT) {
+        report.append("Ознакомьтесь с отчетом и составьте дальнейший план действий по кампаниям").append("\n\n");
+
+        if (type == ANALYTICS_REPORT) {
             report.append("=== АНАЛИТИЧЕСКИЙ ОТЧЕТ ===\n\n");
 
             int totalClicks = reports.stream().mapToInt(r -> r.getClickCount()).sum();
@@ -133,7 +144,7 @@ public class SimplifiedDashboardService {
             String taskId = bitrix24Service.createTaskWithImage(
                     title,
                     fullDescription.toString(),
-                    "1",
+                    request.getType() == ANALYTICS_REPORT ? stoId : seoId,
                     chartBase64,
                     request.getType() + "_report.png"
             );
@@ -146,9 +157,11 @@ public class SimplifiedDashboardService {
     }
 
     private void sendSuccessNotification(DashboardGenerationRequest request) {
+        String responsibleId = request.getType() == ANALYTICS_REPORT ? stoId : seoId;
         NotificationMessage notification = NotificationMessage.builder()
                 .title("Отчет создан: " + request.getTitle())
                 .message("Отчет успешно создан и отправлен в Bitrix24")
+                .receiver(responsibleId)
                 .type(NotificationType.REPORT_GENERATED)
                 .recipient(request.getRecipientsGroup())
                 .build();

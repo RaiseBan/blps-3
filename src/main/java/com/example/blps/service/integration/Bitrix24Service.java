@@ -35,28 +35,17 @@ public class Bitrix24Service {
     @Value("${dashboards.diskfolder.id}")
     private int folderId;
 
-    /**
-     * Создает задачу в Битрикс24 на основе кампании.
-     *
-     * @param campaign данные кампании
-     * @return ID созданной задачи
-     */
-    public String createCampaignTask(OurCampaignDTO campaign) {
-        try {
-            String title = "Обработать кампанию: " + campaign.getCampaignName();
-            String description = String.format(
-                    "Кампания: %s\nБюджет: %s\nСсылка: %s\nURL размещения: %s",
-                    campaign.getCampaignName(),
-                    campaign.getBudget(),
-                    campaign.getReferralLink(),
-                    campaign.getPlacementUrl()
-            );
 
-            return createTask(title, description, "1"); // ID ответственного
-        } catch (ResourceException e) {
-            log.error("Error creating task in Bitrix24", e);
-            throw new RuntimeException("Failed to create task in Bitrix24", e);
-        }
+    public String executeAbstractMethod(String method, Map<String, Object> params) throws ResourceException {
+        return connector.executeMethod(method, params);
+    }
+
+    public void sendSystemNotificationToBitrix(String responsibleId, String message) throws ResourceException {
+        log.info("Sending  notification to user: {}", responsibleId);
+        Map<String, Object> notificationParams = new HashMap<>();
+        notificationParams.put("USER_ID", responsibleId);
+        notificationParams.put("MESSAGE", message);
+        connector.executeMethod("im.notify.system.add", notificationParams);
     }
 
     /**
@@ -85,31 +74,6 @@ public class Bitrix24Service {
         params.put("generateUniqueName", true);
 
         return connector.executeMethod("disk.folder.uploadfile", params);
-    }
-
-
-    /**
-     * Создает лид в Битрикс24 CRM для партнерской кампании.
-     *
-     * @param campaign партнерская кампания
-     * @return ID созданного лида
-     */
-    public String createPartnerLead(TheirCampaign campaign) {
-        try {
-            String title = "Партнер: " + campaign.getPartnerName();
-            String description = String.format(
-                    "Период: %s - %s\nСтатус: %s",
-                    campaign.getStartDate(),
-                    campaign.getEndDate(),
-                    campaign.getStatus()
-            );
-
-            return connector.createLead(title, campaign.getPartnerName(),
-                    "partner@example.com", "+71234567890");
-        } catch (ResourceException e) {
-            log.error("Error creating lead in Bitrix24", e);
-            throw new RuntimeException("Failed to create lead in Bitrix24", e);
-        }
     }
 
 
@@ -164,47 +128,6 @@ public class Bitrix24Service {
     }
 
     /**
-     * Создает задачу в Битрикс24 с приложенной визуализацией дашборда.
-     *
-     * @param title заголовок задачи
-     * @param description описание задачи
-     * @param chartData данные для визуализации
-     * @param responsibleId ID ответственного сотрудника
-     * @return ID созданной задачи
-     * @throws ResourceException если произошла ошибка при создании задачи
-     */
-    public String createDashboardTask(String title, String description, ChartData chartData, String responsibleId) throws ResourceException {
-        try {
-            // Преобразуем данные диаграммы в текстовое представление
-            String chartDataJson = objectMapper.writeValueAsString(chartData);
-
-            // Подготавливаем полное описание, включающее данные диаграммы
-            StringBuilder fullDescription = new StringBuilder(description);
-            fullDescription.append("\n\n--- Данные диаграммы ---\n");
-            fullDescription.append("Тип: ").append(chartData.getChartType()).append("\n");
-            fullDescription.append("Заголовок: ").append(chartData.getTitle()).append("\n");
-            if (chartData.getXAxisLabel() != null) {
-                fullDescription.append("Ось X: ").append(chartData.getXAxisLabel()).append("\n");
-            }
-            if (chartData.getYAxisLabel() != null) {
-                fullDescription.append("Ось Y: ").append(chartData.getYAxisLabel()).append("\n");
-            }
-
-            // Добавляем текстовое представление данных для использования в Bitrix24
-            fullDescription.append("\nДанные диаграммы:\n");
-            fullDescription.append(chartDataJson);
-
-            // Создаем задачу с расширенным описанием
-            log.info("Creating Bitrix24 dashboard task: {}", title);
-            return createTask(title, fullDescription.toString(), responsibleId);
-
-        } catch (Exception e) {
-            log.error("Error creating dashboard task in Bitrix24", e);
-            throw new ResourceException("Failed to create dashboard task in Bitrix24", e);
-        }
-    }
-
-    /**
      * Создает сообщение в живой ленте Битрикс24 с данными дашборда.
      *
      * @param title заголовок сообщения
@@ -236,41 +159,6 @@ public class Bitrix24Service {
         } catch (Exception e) {
             log.error("Error creating live feed message in Bitrix24", e);
             throw new ResourceException("Failed to create live feed message in Bitrix24", e);
-        }
-    }
-
-    /**
-     * Отправляет отчет о результатах кампаний в Битрикс24.
-     *
-     * @param reports список отчетов по кампаниям
-     * @return результат операции
-     */
-    public String sendCampaignReports(List<CampaignReportDTO> reports) {
-        try {
-            Map<String, Object> params = new HashMap<>();
-            params.put("TITLE", "Отчет по рекламным кампаниям");
-
-            StringBuilder reportText = new StringBuilder("Данные по кампаниям:\n\n");
-
-            for (CampaignReportDTO report : reports) {
-                reportText.append(String.format(
-                        "- %s: Бюджет: %s, Клики: %d, CTR: %s%%, Конверсия: %s%%, ROI: %s%%\n",
-                        report.getCampaignName(),
-                        report.getBudget(),
-                        report.getClickCount(),
-                        report.getCtr(),
-                        report.getConversionRate(),
-                        report.getRoi()
-                ));
-            }
-
-            params.put("DESCRIPTION", reportText.toString());
-
-            // Отправляем данные в Битрикс24
-            return connector.executeMethod("disk.storage.uploadfile", params);
-        } catch (ResourceException e) {
-            log.error("Error sending campaign reports to Bitrix24", e);
-            throw new RuntimeException("Failed to send campaign reports to Bitrix24", e);
         }
     }
 

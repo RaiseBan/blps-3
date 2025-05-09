@@ -17,6 +17,7 @@ public class NotificationMessage implements Serializable {
     
     private String title;
     private String message;
+    private String receiver;
     private NotificationType type;
     private String recipient;
     private Long relatedEntityId;

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -57,7 +58,12 @@ public class GeoBitrixSyncService {
             
             // Отправляем в Bitrix24
             String title = "Геолокационный отчет - " + LocalDateTime.now();
-            String taskId = bitrix24Service.createTask(title, report, "1");
+            Map<String, Object> params = new HashMap<>();
+            params.put("fields[TITLE]", title);
+            params.put("fields[COMMENTS]", report);
+            params.put("fields[ASSIGNED_BY_ID]", "1");
+            params.put("fields[SOURCE_ID]", "ADVERTISING");
+            String taskId = bitrix24Service.executeAbstractMethod("crm.lead.add", params);
             
             log.info("Geo data successfully synced to Bitrix24, task ID: {}", taskId);
             

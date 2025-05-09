@@ -60,8 +60,9 @@ public class NotificationListenerService {
                 description += "\nДополнительные данные: " + message.getAdditionalData();
             }
 
-            // Отправляем задачу через коннектор
-            bitrix24Service.createTask(title, description, "1");
+            String notificationMessage = title + "\n" + description;
+
+            bitrix24Service.sendSystemNotificationToBitrix(message.getReceiver(), notificationMessage);
             log.info("Notification sent to Bitrix24: {}", title);
         } catch (ResourceException e) {
             log.error("Error sending notification to Bitrix24", e);
