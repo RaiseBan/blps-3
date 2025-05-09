@@ -2,9 +2,6 @@ package com.example.blps.connector;
 
 import jakarta.resource.cci.ResourceAdapterMetaData;
 
-/**
- * Метаданные адаптера ресурсов для Битрикс24 коннектора.
- */
 public class Bitrix24ResourceAdapterMetaData implements ResourceAdapterMetaData {
 
     @Override

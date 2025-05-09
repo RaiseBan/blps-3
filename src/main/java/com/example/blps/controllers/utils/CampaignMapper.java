@@ -7,7 +7,6 @@ import com.example.blps.model.dataEntity.Metric;
 import com.example.blps.model.dataEntity.OurCampaign;
 import org.springframework.stereotype.Component;
 
-// CampaignMapper.java
 @Component
 public class CampaignMapper {
     

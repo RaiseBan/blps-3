@@ -7,15 +7,9 @@ import java.security.NoSuchAlgorithmException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/**
- * MD5 encoder для работы с паролями в формате {MD5}HASH
- */
 @Component
 public class Md5PasswordEncoder implements PasswordEncoder {
 
-    /**
-     * Генерирует MD5 хеш пароля с префиксом {MD5}
-     */
     @Override
     public String encode(CharSequence rawPassword) {
         try {
@@ -31,16 +25,12 @@ public class Md5PasswordEncoder implements PasswordEncoder {
         }
     }
 
-    /**
-     * Сравнивает пароль и его хеш
-     */
     @Override
     public boolean matches(CharSequence rawPassword, String encodedPassword) {
         if (encodedPassword == null) {
             return false;
         }
 
-        // Создаем хеш для введенного пароля
         String rawHash = encode(rawPassword);
 
         boolean result = encodedPassword.equalsIgnoreCase(rawHash);

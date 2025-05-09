@@ -10,10 +10,6 @@ import jakarta.resource.cci.ResultSetInfo;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Реализация соединения для Битрикс24 коннектора.
- * Обеспечивает взаимодействие с API Битрикс24 через JCA.
- */
 @Slf4j
 public class Bitrix24Connection implements Connection {
 
@@ -28,7 +24,7 @@ public class Bitrix24Connection implements Connection {
     @Override
     public LocalTransaction getLocalTransaction() throws ResourceException {
         checkIfClosed();
-        // В нашей реализации не поддерживаем локальные транзакции
+        
         throw new ResourceException("Local transactions are not supported");
     }
 
@@ -41,7 +37,7 @@ public class Bitrix24Connection implements Connection {
     @Override
     public ResultSetInfo getResultSetInfo() throws ResourceException {
         checkIfClosed();
-        // Не поддерживаем ResultSet
+        
         throw new ResourceException("ResultSet is not supported");
     }
 

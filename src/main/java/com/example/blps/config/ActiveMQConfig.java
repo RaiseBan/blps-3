@@ -21,7 +21,6 @@ import org.springframework.jms.support.converter.MessageType;
 
 import jakarta.jms.ConnectionFactory;
 
-// src/main/java/com/example/blps/config/ActiveMQConfig.java
 @Configuration
 @EnableJms
 @Slf4j
@@ -49,13 +48,12 @@ public class ActiveMQConfig {
         connectionFactory.setPassword(password);
         connectionFactory.setTrustAllPackages(true);
 
-        // Настраиваем политику redelivery
         RedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
         redeliveryPolicy.setInitialRedeliveryDelay(0);
         redeliveryPolicy.setRedeliveryDelay(1000);
         redeliveryPolicy.setUseCollisionAvoidance(false);
         redeliveryPolicy.setUseExponentialBackOff(false);
-        redeliveryPolicy.setMaximumRedeliveries(0); // Отключаем повторную доставку
+        redeliveryPolicy.setMaximumRedeliveries(0); 
         connectionFactory.setRedeliveryPolicy(redeliveryPolicy);
 
         return connectionFactory;
@@ -74,7 +72,7 @@ public class ActiveMQConfig {
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
         converter.setTargetType(MessageType.TEXT);
         converter.setTypeIdPropertyName("_type");
-        converter.setObjectMapper(jmsObjectMapper()); // Используем настроенный ObjectMapper
+        converter.setObjectMapper(jmsObjectMapper()); 
         return converter;
     }
 

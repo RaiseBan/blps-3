@@ -7,9 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
 
-/**
- * Сервис для асинхронной обработки геолокационных запросов
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -20,9 +17,6 @@ public class GeoLocationProcessingService {
     
     public static final String GEO_PROCESSING_QUEUE = "geo.processing.queue";
     
-    /**
-     * Обрабатывает запрос на определение геолокации из очереди
-     */
     @JmsListener(destination = GEO_PROCESSING_QUEUE)
     public void processGeoLocationRequest(GeoLocationRequest request) {
         log.debug("Processing geo location request for IP: {}", request.getIp());
@@ -41,9 +35,6 @@ public class GeoLocationProcessingService {
         }
     }
     
-    /**
-     * DTO для запроса на обработку геолокации
-     */
     @lombok.Data
     @lombok.Builder
     @lombok.NoArgsConstructor

@@ -10,10 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
-/**
- * Сервис для прослушивания и обработки уведомлений из очереди.
- * Отправляет уведомления в Bitrix24 без сохранения в локальную БД.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,32 +17,23 @@ public class NotificationListenerService {
 
     private final Bitrix24Service bitrix24Service;
 
-    /**
-     * Обрабатывает входящие уведомления из очереди и отправляет их в Bitrix24
-     *
-     * @param message сообщение с уведомлением
-     */
     @JmsListener(destination = MessageSenderService.NOTIFICATION_QUEUE)
     public void processNotification(NotificationMessage message) {
         log.info("Received notification message: {}", message);
 
         try {
-            // Отправляем уведомление в Bitrix24
+            
             sendToBitrix24(message);
             log.info("Notification sent to Bitrix24 successfully");
         } catch (Exception e) {
             log.error("Error processing notification", e);
-            // В случае ошибки можно реализовать механизм повторной отправки
-            // или записать в журнал для дальнейшего анализа
+            
         }
     }
 
-    /**
-     * Отправляет уведомление в Bitrix24
-     */
     private void sendToBitrix24(NotificationMessage message) {
         try {
-            // Формируем задачу в Bitrix24
+            
             String title = "Уведомление: " + message.getTitle();
             String description = "Тип: " + message.getType() + "\n" +
                     "Содержание: " + message.getMessage() + "\n" +

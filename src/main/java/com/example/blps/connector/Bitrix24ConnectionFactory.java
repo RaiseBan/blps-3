@@ -11,10 +11,6 @@ import jakarta.resource.cci.ResourceAdapterMetaData;
 
 import org.springframework.stereotype.Component;
 
-/**
- * Фабрика соединений для Битрикс24 коннектора.
- * Реализует интерфейс JCA ConnectionFactory для создания соединений с Битрикс24.
- */
 @Component
 public class Bitrix24ConnectionFactory implements ConnectionFactory {
 
@@ -31,8 +27,7 @@ public class Bitrix24ConnectionFactory implements ConnectionFactory {
 
     @Override
     public Connection getConnection(ConnectionSpec properties) throws ResourceException {
-        // В нашей реализации мы не используем параметры соединения,
-        // так как работаем через вебхук
+        
         return getConnection();
     }
 
@@ -48,13 +43,13 @@ public class Bitrix24ConnectionFactory implements ConnectionFactory {
 
     @Override
     public Reference getReference() throws NamingException {
-        // Не используем JNDI для поиска ресурсов
+        
         throw new UnsupportedOperationException("JNDI lookup not supported");
     }
 
     @Override
     public void setReference(Reference reference) {
-        // Не используем JNDI для поиска ресурсов
+        
         throw new UnsupportedOperationException("JNDI lookup not supported");
     }
 }

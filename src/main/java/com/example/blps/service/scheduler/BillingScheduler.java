@@ -35,7 +35,7 @@ public class BillingScheduler {
             Trigger trigger = TriggerBuilder.newTrigger()
                     .withIdentity("billingTrigger", "billingGroup")
                     .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                            .withIntervalInMinutes(2) // каждые 2 минуты
+                            .withIntervalInMinutes(2) 
                             .repeatForever())
                     .startAt(DateBuilder.futureDate(10, DateBuilder.IntervalUnit.SECOND))
                     .build();

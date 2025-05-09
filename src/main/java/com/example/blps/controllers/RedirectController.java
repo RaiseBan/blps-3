@@ -26,14 +26,12 @@ public class RedirectController {
     @GetMapping("/{referralHash}")
     public RedirectView handleRedirect(@PathVariable String referralHash, HttpServletRequest request) {
         try {
-            // Обрабатываем клик как и раньше
+            
             OurCampaign campaign = referralService.processReferralClick(referralHash);
 
-            // Извлекаем IP адрес
             String clientIp = IpUtils.getClientIpAddress(request);
             log.info("Redirect request from IP: {} for referral: {}", clientIp, referralHash);
 
-            // Отправляем запрос на асинхронную обработку геолокации
             GeoLocationProcessingService.GeoLocationRequest geoRequest =
                     GeoLocationProcessingService.GeoLocationRequest.builder()
                             .ip(clientIp)
@@ -47,7 +45,6 @@ public class RedirectController {
             log.error("Error processing redirect for referral: {}", referralHash, e);
         }
 
-        // Всегда возвращаем на главную страницу
         return new RedirectView("/");
     }
 }

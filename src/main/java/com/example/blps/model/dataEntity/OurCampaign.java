@@ -41,14 +41,14 @@ public class OurCampaign {
             mappedBy = "campaign",
             cascade = CascadeType.ALL,
             orphanRemoval = true,
-            fetch = FetchType.EAGER // Для гарантированной загрузки
+            fetch = FetchType.EAGER 
     )
     @JsonManagedReference
     private Metric metric;
 
     @PrePersist
     private void initializeMetric() {
-        // Создаем метрику, если она еще не была создана
+        
         if (this.metric == null) {
             this.metric = new Metric();
             this.metric.setCampaign(this);

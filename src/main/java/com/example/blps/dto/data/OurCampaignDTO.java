@@ -1,4 +1,3 @@
-// OurCampaignDTO.java
 package com.example.blps.dto.data;
 
 import lombok.Getter;
@@ -13,5 +12,5 @@ public class OurCampaignDTO {
     private String referralLink;
     private BigDecimal budget;
     private String placementUrl;
-    private MetricDTO metric; // Добавляем метрики
+    private MetricDTO metric; 
 }

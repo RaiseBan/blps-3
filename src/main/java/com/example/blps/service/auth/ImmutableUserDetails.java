@@ -8,9 +8,6 @@ import java.util.Set;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-/**
- * Неизменяемая реализация UserDetails
- */
 public class ImmutableUserDetails implements UserDetails {
     
     private final String username;

@@ -1,4 +1,3 @@
-// src/main/java/com/example/blps/service/notification/FinancialDashboardService.java
 package com.example.blps.service.notification;
 
 import com.example.blps.dto.notification.DashboardGenerationRequest;
@@ -13,11 +12,6 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Сервис для обработки финансовых дашбордов (узел 2)
- */
-// src/main/java/com/example/blps/service/notification/FinancialDashboardService.java
-// src/main/java/com/example/blps/service/notification/FinancialDashboardService.java
 @Service
 @ConditionalOnProperty(name = "financial.node.enabled", havingValue = "true")
 @Slf4j

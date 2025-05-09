@@ -27,7 +27,7 @@ public class GeoLocationData implements Serializable {
     private String continentCode;
     private String timezone;
     private LocalDateTime timestamp;
-    private String referralHash; // какая реферальная ссылка использовалась
-    private Long campaignId; // ID кампании
-    private Integer clickCount = 1; // количество кликов с этого IP
+    private String referralHash; 
+    private Long campaignId; 
+    private Integer clickCount = 1; 
 }

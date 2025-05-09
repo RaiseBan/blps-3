@@ -31,7 +31,6 @@ public class XmlUserDetailsService implements UserDetailsService {
     @Value("classpath:users.xml")
     private Resource xmlResource;
 
-    // Используем потокобезопасную структуру данных
     private final Map<String, UserDetails> userCache = new ConcurrentHashMap<>();
 
     @PostConstruct
@@ -75,10 +74,9 @@ public class XmlUserDetailsService implements UserDetailsService {
                 authorities.add(new SimpleGrantedAuthority(roleName));
             }
 
-            // Используем нашу неизменяемую реализацию UserDetails
             UserDetails user = ImmutableUserDetails.builder()
                     .username(username)
-                    .password(password) // Сохраняем пароль в формате {MD5}hash
+                    .password(password) 
                     .authorities(authorities)
                     .build();
 
@@ -97,7 +95,6 @@ public class XmlUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Пользователь не найден: " + username);
         }
 
-        // Создаем новую копию объекта, чтобы избежать изменений в оригинале
         UserDetails userCopy = ImmutableUserDetails.builder()
                 .username(user.getUsername())
                 .password(user.getPassword())

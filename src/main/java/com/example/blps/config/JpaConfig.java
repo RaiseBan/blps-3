@@ -17,7 +17,7 @@ public class JpaConfig {
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(
         DataSource dataSource,
         JpaVendorAdapter jpaVendorAdapter,
-        AtomikosJtaPlatform jtaPlatform // Внедряем наш бин
+        AtomikosJtaPlatform jtaPlatform 
     ) {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);

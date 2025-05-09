@@ -19,5 +19,5 @@ public class BillingItem implements Serializable {
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
-    private String type; // CLICK, CONVERSION, FEE, etc.
+    private String type; 
 }

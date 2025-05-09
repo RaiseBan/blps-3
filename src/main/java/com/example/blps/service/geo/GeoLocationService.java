@@ -9,9 +9,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 
-/**
- * Сервис для определения геолокации по IP адресу
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -20,9 +17,6 @@ public class GeoLocationService {
     private static final String IP_WHO_API_URL = "http://ipwho.is/";
     private final RestTemplate restTemplate;
 
-    /**
-     * Получает информацию о геолокации по IP адресу
-     */
     public GeoLocationData getGeoData(String ip, String referralHash, Long campaignId) {
         try {
             log.debug("Fetching geo data for IP: {}", ip);
@@ -58,9 +52,6 @@ public class GeoLocationService {
         }
     }
 
-    /**
-     * Создает данные по умолчанию, если не удалось получить информацию
-     */
     private GeoLocationData createDefaultGeoData(String ip, String referralHash, Long campaignId) {
         return GeoLocationData.builder()
                 .ip(ip)

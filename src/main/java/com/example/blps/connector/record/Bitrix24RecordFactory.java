@@ -7,10 +7,6 @@ import jakarta.resource.cci.RecordFactory;
 
 import org.springframework.stereotype.Component;
 
-/**
- * Фабрика записей для Битрикс24 коннектора.
- * Создает объекты записей для использования в запросах и ответах.
- */
 @Component
 public class Bitrix24RecordFactory implements RecordFactory {
 

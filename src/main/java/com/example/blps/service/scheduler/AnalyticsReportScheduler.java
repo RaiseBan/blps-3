@@ -31,7 +31,7 @@ public class AnalyticsReportScheduler {
             Trigger trigger = TriggerBuilder.newTrigger()
                     .withIdentity("analyticsReportTrigger", "reportGroup")
                     .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                            .withIntervalInMinutes(5) // каждые 5 минут
+                            .withIntervalInMinutes(5) 
                             .repeatForever())
                     .startNow()
                     .build();

@@ -10,7 +10,6 @@ import org.hibernate.validator.constraints.URL;
 
 import java.time.LocalDate;
 
-// TheirCampaignRequest.java
 @Getter
 @Setter
 public class TheirCampaignRequest {

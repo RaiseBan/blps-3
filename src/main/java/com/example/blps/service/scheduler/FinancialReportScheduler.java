@@ -31,7 +31,7 @@ public class FinancialReportScheduler {
             Trigger trigger = TriggerBuilder.newTrigger()
                     .withIdentity("financialReportTrigger", "reportGroup")
                     .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                            .withIntervalInMinutes(5) // каждые 5 минут
+                            .withIntervalInMinutes(5) 
                             .repeatForever())
                     .startNow()
                     .build();

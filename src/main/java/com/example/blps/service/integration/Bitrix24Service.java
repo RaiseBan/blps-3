@@ -20,10 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Сервис для работы с Битрикс24 через JCA коннектор.
- * Предоставляет методы для создания задач, лидов и других сущностей в Битрикс24 CRM.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -34,7 +30,6 @@ public class Bitrix24Service {
 
     @Value("${dashboards.diskfolder.id}")
     private int folderId;
-
 
     public String executeAbstractMethod(String method, Map<String, Object> params) throws ResourceException {
         return connector.executeMethod(method, params);
@@ -48,15 +43,6 @@ public class Bitrix24Service {
         connector.executeMethod("im.notify.system.add", notificationParams);
     }
 
-    /**
-     * Создает задачу в Битрикс24.
-     *
-     * @param title название задачи
-     * @param description описание задачи
-     * @param responsibleId ID ответственного сотрудника
-     * @return ID созданной задачи
-     * @throws ResourceException если произошла ошибка при создании задачи
-     */
     public String createTask(String title, String description, String responsibleId) throws ResourceException {
         Map<String, Object> params = new HashMap<>();
         params.put("fields[TITLE]", title);
@@ -76,16 +62,6 @@ public class Bitrix24Service {
         return connector.executeMethod("disk.folder.uploadfile", params);
     }
 
-
-    /**
-     * Синхронизирует оптимизацию бюджета с Битрикс24.
-     *
-     * @param campaignId ID кампании
-     * @param campaignName название кампании
-     * @param oldBudget старый бюджет
-     * @param newBudget новый бюджет
-     * @return результат операции
-     */
     public String syncBudgetOptimization(Long campaignId, String campaignName,
                                          java.math.BigDecimal oldBudget,
                                          java.math.BigDecimal newBudget) {
@@ -105,19 +81,16 @@ public class Bitrix24Service {
                     calculatePercentChange(oldBudget, newBudget)
             );
 
-            return createTask(title, description, "1"); // ID ответственного
+            return createTask(title, description, "1"); 
         } catch (ResourceException e) {
             log.error("Error syncing budget optimization with Bitrix24", e);
             throw new RuntimeException("Failed to sync budget optimization with Bitrix24", e);
         }
     }
 
-    /**
-     * Рассчитывает процентное изменение между двумя значениями.
-     */
     private String calculatePercentChange(java.math.BigDecimal oldValue, java.math.BigDecimal newValue) {
         if (oldValue.equals(java.math.BigDecimal.ZERO)) {
-            return "∞"; // Избегаем деления на ноль
+            return "∞"; 
         }
 
         java.math.BigDecimal change = newValue.subtract(oldValue)
@@ -127,32 +100,21 @@ public class Bitrix24Service {
         return change.toString();
     }
 
-    /**
-     * Создает сообщение в живой ленте Битрикс24 с данными дашборда.
-     *
-     * @param title заголовок сообщения
-     * @param message текст сообщения
-     * @param chartData данные для визуализации
-     * @return ID созданного сообщения
-     * @throws ResourceException если произошла ошибка при создании сообщения
-     */
     public String createLiveFeedMessage(String title, String message, ChartData chartData) throws ResourceException {
         try {
-            // Преобразуем данные диаграммы в текстовое представление
+            
             String chartDataJson = objectMapper.writeValueAsString(chartData);
 
-            // Подготавливаем полное сообщение
             StringBuilder fullMessage = new StringBuilder();
             fullMessage.append("<b>").append(title).append("</b><br><br>");
             fullMessage.append(message.replace("\n", "<br>"));
             fullMessage.append("<br><br><b>Данные диаграммы:</b><br>");
             fullMessage.append("<pre>").append(chartDataJson).append("</pre>");
 
-            // Параметры для создания сообщения в живой ленте
             Map<String, Object> params = new HashMap<>();
             params.put("POST_TITLE", title);
             params.put("MESSAGE", fullMessage.toString());
-            params.put("DEST", "[\"UA\"]"); // Отправка всем пользователям
+            params.put("DEST", "[\"UA\"]"); 
 
             return connector.executeMethod("socialnetwork.livefeed.post.add", params);
 
@@ -162,12 +124,6 @@ public class Bitrix24Service {
         }
     }
 
-    /**
-     * Проверяет состояние подключения к Битрикс24.
-     *
-     * @return информация о состоянии подключения
-     * @throws ResourceException если произошла ошибка при проверке подключения
-     */
     public String checkConnection() throws ResourceException {
         Map<String, Object> params = new HashMap<>();
         return connector.executeMethod("app.info", params);
@@ -176,7 +132,7 @@ public class Bitrix24Service {
     public String createTaskWithImage(String title, String description, String responsibleId,
                                       String imageBase64, String fileName) throws ResourceException {
         try {
-            // Сначала создаем задачу
+            
             Map<String, Object> resultMap = objectMapper.readValue(createTask(title, description, responsibleId), Map.class);
 
             Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
@@ -189,7 +145,6 @@ public class Bitrix24Service {
             Integer fileId = (Integer) fileResult.get("ID");
 
             log.info("File loaded with ID: {}", fileId);
-
 
             Map<String, Object> params = new HashMap<>();
             params.put("taskId", taskId);

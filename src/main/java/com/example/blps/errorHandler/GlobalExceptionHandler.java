@@ -23,21 +23,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage()));
     }
 
-//    @ExceptionHandler(NotFoundException.class)
-//    public void handleNotFoundException(
-//            NotFoundException ex,
-//            HttpServletResponse response
-//    ) throws IOException {
-//        response.reset(); // Сбрасываем установленные ранее заголовки
-//        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-//        response.setStatus(HttpStatus.NOT_FOUND.value());
-//        response.getWriter().write(
-//                new ObjectMapper().writeValueAsString(
-//                        new ErrorResponse(ex.getMessage())
-//                )
-//        );
-//    }
-
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

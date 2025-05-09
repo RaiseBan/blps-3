@@ -1,4 +1,3 @@
-// src/main/java/com/example/blps/service/notification/AnalyticsDashboardService.java
 package com.example.blps.service.notification;
 
 import com.example.blps.dto.notification.DashboardGenerationRequest;
@@ -15,11 +14,6 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Сервис для обработки аналитических дашбордов (узел 1)
- */
-// src/main/java/com/example/blps/service/notification/AnalyticsDashboardService.java
-// src/main/java/com/example/blps/service/notification/AnalyticsDashboardService.java
 @Service
 @ConditionalOnProperty(name = "analytics.node.enabled", havingValue = "true")
 @Slf4j

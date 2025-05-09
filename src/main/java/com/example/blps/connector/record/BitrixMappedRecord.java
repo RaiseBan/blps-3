@@ -10,10 +10,6 @@ import jakarta.resource.cci.MappedRecord;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * Реализация MappedRecord для Битрикс24 коннектора.
- * Используется для передачи данных в запросах и получения ответов.
- */
 @Setter
 @Getter
 public class BitrixMappedRecord implements MappedRecord {
@@ -77,7 +73,6 @@ public class BitrixMappedRecord implements MappedRecord {
         return clone;
     }
 
-    // Методы интерфейса Map
     @Override
     public int size() {
         return parameters.size();

@@ -1,4 +1,3 @@
-// src/main/java/com/example/blps/service/notification/ChartGeneratorService.java
 package com.example.blps.service.notification;
 
 import com.example.blps.dto.data.CampaignReportDTO;
@@ -25,13 +24,9 @@ import java.util.List;
 @Slf4j
 public class ChartGeneratorService {
 
-    /**
-     * Генерирует аналитический отчет с графиками производительности
-     */
     public String generateAnalyticsReport(List<CampaignReportDTO> reports) throws IOException {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
-        // Добавляем данные для каждой кампании
         for (CampaignReportDTO report : reports) {
             String campaignName = truncateName(report.getCampaignName());
             dataset.addValue(report.getClickCount(), "Клики", campaignName);
@@ -50,24 +45,18 @@ public class ChartGeneratorService {
                 false
         );
 
-        // Настройка внешнего вида
         customizeChart(chart);
 
         return chartToBase64(chart, 1000, 600);
     }
 
-    /**
-     * Генерирует финансовый отчет с графиками бюджетов и ROI
-     */
     public String generateFinancialReport(List<CampaignReportDTO> reports) throws IOException {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
-        // Добавляем финансовые данные
         for (CampaignReportDTO report : reports) {
             String campaignName = truncateName(report.getCampaignName());
             dataset.addValue(report.getBudget().doubleValue() / 1000, "Бюджет (тыс.)", campaignName);
 
-            // ROI может быть отрицательным, поэтому добавляем смещение для визуализации
             double roi = report.getRoi().doubleValue();
             dataset.addValue(roi + 50, "ROI % (+50)", campaignName);
         }
@@ -88,9 +77,6 @@ public class ChartGeneratorService {
         return chartToBase64(chart, 1000, 600);
     }
 
-    /**
-     * Генерирует круговую диаграмму распределения бюджета
-     */
     public String generateBudgetPieChart(List<CampaignReportDTO> reports) throws IOException {
         DefaultPieDataset dataset = new DefaultPieDataset();
 
@@ -107,7 +93,6 @@ public class ChartGeneratorService {
                 false
         );
 
-        // Настройка цветов
         chart.setBackgroundPaint(Color.WHITE);
         chart.getTitle().setFont(new Font("Arial", Font.BOLD, 16));
 
@@ -126,10 +111,9 @@ public class ChartGeneratorService {
         BarRenderer renderer = (BarRenderer) plot.getRenderer();
         renderer.setDrawBarOutline(false);
 
-        // Настройка цветов столбцов
-        renderer.setSeriesPaint(0, new Color(52, 152, 219)); // Синий
-        renderer.setSeriesPaint(1, new Color(46, 204, 113)); // Зеленый
-        renderer.setSeriesPaint(2, new Color(231, 76, 60));  // Красный
+        renderer.setSeriesPaint(0, new Color(52, 152, 219)); 
+        renderer.setSeriesPaint(1, new Color(46, 204, 113)); 
+        renderer.setSeriesPaint(2, new Color(231, 76, 60));  
     }
 
     private String truncateName(String name) {

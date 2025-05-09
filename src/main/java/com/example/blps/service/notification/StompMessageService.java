@@ -58,16 +58,10 @@ public class StompMessageService {
         }
     }
 
-    /**
-     * Отправляет сообщение через STOMP для получения через JMS
-     */
     public void sendMessage(String destination, Object message) {
         sendMessage(destination, message, null);
     }
 
-    /**
-     * Отправляет сообщение через STOMP с дополнительными headers
-     */
     public void sendMessage(String destination, Object message, Map<String, String> additionalHeaders) {
         try {
             if (!connected) {
@@ -76,21 +70,18 @@ public class StompMessageService {
             }
 
             if (connected && connection != null) {
-                // Сериализуем объект в JSON
+                
                 String jsonMessage = objectMapper.writeValueAsString(message);
 
-                // Создаем headers для правильной десериализации в JMS
                 HashMap<String, String> headers = new HashMap<>();
                 headers.put("persistent", "true");
                 headers.put("content-type", "application/json");
                 headers.put("_type", message.getClass().getName());
 
-                // Добавляем дополнительные headers если есть
                 if (additionalHeaders != null) {
                     headers.putAll(additionalHeaders);
                 }
 
-                // Отправляем в очередь (без префикса /queue/)
                 connection.send(destination, jsonMessage, null, headers);
 
                 log.debug("Message sent via STOMP to destination: {}", destination);

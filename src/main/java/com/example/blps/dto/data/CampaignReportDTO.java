@@ -1,4 +1,4 @@
-package com.example.blps.dto.data;// CampaignReportDTO.java
+package com.example.blps.dto.data;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;

@@ -1,4 +1,4 @@
-package com.example.blps.controllers;// TheirCampaignController.java
+package com.example.blps.controllers;
 
 import java.util.List;
 

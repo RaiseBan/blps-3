@@ -25,12 +25,11 @@ public class ReferralService {
     private final PlatformTransactionManager transactionManager;
 
     public OurCampaign processReferralClick(String referralHash) {
-        // Определение транзакции с использованием JTA
+        
         DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
         definition.setName("processReferralClickTransaction");
         definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        // Начало транзакции через Atomikos JTA менеджер
         TransactionStatus status = transactionManager.getTransaction(definition);
 
         try {
@@ -43,7 +42,6 @@ public class ReferralService {
 
             transactionManager.commit(status);
 
-            // Возвращаем кампанию
             return campaign;
         } catch (Exception e) {
             transactionManager.rollback(status);
@@ -70,7 +68,6 @@ public class ReferralService {
         metric.setRoi(calculateROI());
     }
 
-    // Эти методы можно вынести в отдельный Calculator сервис при необходимости
     private BigDecimal calculateCTR() {
         return BigDecimal.valueOf(Math.random() * 10);
     }

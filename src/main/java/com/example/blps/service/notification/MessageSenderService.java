@@ -17,13 +17,9 @@ public class MessageSenderService {
 
     private final StompMessageService stompMessageService;
 
-    // Константы для имен очередей
     public static final String NOTIFICATION_QUEUE = "notification.queue";
     public static final String DASHBOARD_GENERATION_QUEUE = "dashboard.generation.queue";
 
-    /**
-     * Отправляет сообщение об уведомлении через STOMP
-     */
     public void sendNotification(NotificationMessage notification) {
         log.info("Sending notification message to queue: {}", notification);
         try {
@@ -35,13 +31,10 @@ public class MessageSenderService {
         }
     }
 
-    /**
-     * Отправляет запрос на генерацию дашборда через STOMP
-     */
     public void sendDashboardGenerationRequest(DashboardGenerationRequest request) {
         log.info("Sending dashboard generation request to queue: {}", request);
         try {
-            // Добавляем необходимые headers для JMS selector
+            
             Map<String, String> headers = new HashMap<>();
             headers.put("dashboardType", request.getType().name());
             headers.put("messageId", UUID.randomUUID().toString());
@@ -54,9 +47,6 @@ public class MessageSenderService {
         }
     }
 
-    /**
-     * Отправляет произвольное сообщение через STOMP
-     */
     public void sendMessage(String destination, Object message) {
         log.info("Sending message to queue {}: {}", destination, message);
         try {

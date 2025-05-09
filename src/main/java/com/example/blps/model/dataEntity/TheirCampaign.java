@@ -22,7 +22,6 @@ public class TheirCampaign {
     @Column(nullable = false)
     private String partnerName;
 
-
     @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 
@@ -37,6 +36,6 @@ public class TheirCampaign {
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false) // Статус нельзя менять напрямую
+    @Column(nullable = false) 
     private CampaignStatus status;
 }

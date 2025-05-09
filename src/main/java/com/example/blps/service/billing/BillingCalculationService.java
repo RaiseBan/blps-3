@@ -22,14 +22,10 @@ public class BillingCalculationService {
 
     private final OurCampaignRepository campaignRepository;
 
-    // Стоимость за клик (можно вынести в конфигурацию)
     private static final BigDecimal COST_PER_CLICK = new BigDecimal("0.50");
     private static final BigDecimal COST_PER_CONVERSION = new BigDecimal("5.00");
-    private static final BigDecimal PLATFORM_FEE_PERCENTAGE = new BigDecimal("10"); // 10%
+    private static final BigDecimal PLATFORM_FEE_PERCENTAGE = new BigDecimal("10"); 
 
-    /**
-     * Рассчитывает биллинг для кампании
-     */
     public BillingData calculateBilling(BillingRequest request) {
         log.info("Calculating billing for campaign: {} for period {} - {}",
                 request.getCampaignId(), request.getPeriodStart(), request.getPeriodEnd());
@@ -45,7 +41,6 @@ public class BillingCalculationService {
         List<BillingItem> items = new ArrayList<>();
         BigDecimal totalSpent = BigDecimal.ZERO;
 
-        // Расчет стоимости кликов
         if (metric.getClickCount() > 0) {
             BigDecimal clicksCost = COST_PER_CLICK.multiply(new BigDecimal(metric.getClickCount()));
             items.add(BillingItem.builder()
@@ -58,7 +53,6 @@ public class BillingCalculationService {
             totalSpent = totalSpent.add(clicksCost);
         }
 
-        // Расчет стоимости конверсий
         Integer conversions = calculateConversions(metric);
         if (conversions > 0) {
             BigDecimal conversionsCost = COST_PER_CONVERSION.multiply(new BigDecimal(conversions));
@@ -72,7 +66,6 @@ public class BillingCalculationService {
             totalSpent = totalSpent.add(conversionsCost);
         }
 
-        // Добавляем комиссию платформы
         BigDecimal platformFee = totalSpent.multiply(PLATFORM_FEE_PERCENTAGE)
                 .divide(new BigDecimal("100"), 2, BigDecimal.ROUND_HALF_UP);
         items.add(BillingItem.builder()
@@ -102,7 +95,7 @@ public class BillingCalculationService {
     }
 
     private Integer calculateConversions(Metric metric) {
-        // Упрощенный расчет конверсий на основе CTR и коэффициента конверсии
+        
         if (metric.getClickCount() == null || metric.getConversionRate() == null) {
             return 0;
         }

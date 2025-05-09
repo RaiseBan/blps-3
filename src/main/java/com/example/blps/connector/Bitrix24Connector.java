@@ -16,10 +16,6 @@ import com.example.blps.connector.record.BitrixMappedRecord;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * JCA коннектор для интеграции с Битрикс24 CRM.
- * Реализует отправку запросов через REST API Битрикс24.
- */
 @Component
 @Slf4j
 public class Bitrix24Connector {
@@ -35,14 +31,6 @@ public class Bitrix24Connector {
         this.recordFactory = recordFactory;
     }
 
-    /**
-     * Отправляет запрос к API Битрикс24 и возвращает ответ.
-     *
-     * @param method имя метода API
-     * @param params параметры запроса
-     * @return результат запроса
-     * @throws ResourceException если произошла ошибка при взаимодействии с API
-     */
     public String executeMethod(String method, java.util.Map<String, Object> params) throws ResourceException {
         log.debug("Executing Bitrix24 method: {} with params: {}", method, params);
 
@@ -51,18 +39,14 @@ public class Bitrix24Connector {
             connection = connectionFactory.getConnection();
             Interaction interaction = connection.createInteraction();
 
-            // Создаем спецификацию взаимодействия
             InteractionSpec interactionSpec = new BitrixInteractionSpec(method, webhookUrl);
 
-            // Создаем и заполняем входную запись
             BitrixMappedRecord inputRecord = (BitrixMappedRecord) recordFactory.createMappedRecord("BitrixRequest");
             inputRecord.setRecordName("BitrixRequest");
             inputRecord.setParameters(params);
 
-            // Создаем выходную запись
             Record outputRecord = recordFactory.createMappedRecord("BitrixResponse");
 
-            // Выполняем запрос
             boolean success = interaction.execute(interactionSpec, inputRecord, outputRecord);
 
             if (!success) {
@@ -84,15 +68,6 @@ public class Bitrix24Connector {
         }
     }
 
-    /**
-     * Создает задачу в Битрикс24.
-     *
-     * @param title название задачи
-     * @param description описание задачи
-     * @param responsibleId ID ответственного сотрудника
-     * @return ID созданной задачи
-     * @throws ResourceException если произошла ошибка при создании задачи
-     */
     public String createTask(String title, String description, String responsibleId) throws ResourceException {
         java.util.Map<String, Object> params = new java.util.HashMap<>();
         params.put("fields[TITLE]", title);
@@ -102,16 +77,6 @@ public class Bitrix24Connector {
         return executeMethod("tasks.task.add", params);
     }
 
-    /**
-     * Создает лид в Битрикс24 CRM.
-     *
-     * @param title название лида
-     * @param name имя контакта
-     * @param email email контакта
-     * @param phone телефон контакта
-     * @return ID созданного лида
-     * @throws ResourceException если произошла ошибка при создании лида
-     */
     public String createLead(String title, String name, String email, String phone) throws ResourceException {
         java.util.Map<String, Object> params = new java.util.HashMap<>();
         params.put("fields[TITLE]", title);

@@ -1,4 +1,3 @@
-// src/main/java/com/example/blps/service/notification/SimplifiedDashboardService.java
 package com.example.blps.service.notification;
 
 import com.example.blps.dto.data.CampaignReportDTO;
@@ -39,7 +38,7 @@ public class SimplifiedDashboardService {
         log.info("=== SimplifiedDashboardService processing request: {} ===", request);
 
         try {
-            // 1. Получаем данные для графиков
+            
             List<CampaignReportDTO> reports = reportService.getCampaignsReportData();
 
             if (reports.isEmpty()) {
@@ -48,16 +47,12 @@ public class SimplifiedDashboardService {
                 return;
             }
 
-            // 2. Генерируем отчет с графиками
             String chartBase64 = generateChart(request.getType(), reports);
 
-            // 3. Создаем текстовый отчет
             String reportText = generateTextReport(request.getType(), reports);
 
-            // 4. Отправляем в Bitrix24
             sendToBitrix24(request, chartBase64, reportText);
 
-            // 5. Отправляем уведомление об успешной обработке
             sendSuccessNotification(request);
 
             log.info("Dashboard generation completed successfully");
@@ -132,7 +127,6 @@ public class SimplifiedDashboardService {
         try {
             String title = request.getTitle();
 
-            // Полное описание для задачи
             StringBuilder fullDescription = new StringBuilder();
             fullDescription.append(reportText);
             fullDescription.append("\n\n");
@@ -140,7 +134,6 @@ public class SimplifiedDashboardService {
             fullDescription.append("Период: ").append(request.getStartDate())
                     .append(" - ").append(request.getEndDate()).append("\n");
 
-            // Отправляем задачу с изображением в Bitrix24
             String taskId = bitrix24Service.createTaskWithImage(
                     title,
                     fullDescription.toString(),

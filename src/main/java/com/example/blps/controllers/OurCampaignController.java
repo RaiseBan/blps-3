@@ -62,12 +62,6 @@ public class OurCampaignController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Оптимизирует бюджет кампании на основе аналитических данных
-     *
-     * @param id ID кампании для оптимизации
-     * @return Обновленную информацию о кампании с оптимизированным бюджетом
-     */
     @PutMapping("/{id}/optimize-budget")
     public ResponseEntity<OurCampaignDTO> optimizeBudget(@PathVariable Long id) {
         OurCampaignDTO optimizedCampaign = budgetOptimizationService.optimizeCampaignBudget(id);

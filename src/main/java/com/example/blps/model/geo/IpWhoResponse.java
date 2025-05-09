@@ -28,7 +28,6 @@ public class IpWhoResponse {
     private String capital;
     private String borders;
     
-    // Nested objects
     private TimeZone timezone;
     
     @Data

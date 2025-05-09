@@ -7,10 +7,6 @@ import org.springframework.context.annotation.PropertySource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * Конфигурация для интеграции с Битрикс24.
- * Содержит настройки для подключения к API Битрикс24.
- */
 @Configuration
 @PropertySource("classpath:bitrix24.properties")
 public class Bitrix24Config {

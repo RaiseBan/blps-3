@@ -15,9 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Сервис для отправки геолокационных данных в Bitrix24
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,9 +24,6 @@ public class GeoBitrixSyncService {
     private final Bitrix24Service bitrix24Service;
     private final ObjectMapper objectMapper;
     
-    /**
-     * Отправляет накопленные геоданные в Bitrix24
-     */
     public void syncGeoDataToBitrix() {
         List<GeoLocationData> geoDataList = geoLocationStorage.getAndClearAll();
         
@@ -41,22 +35,19 @@ public class GeoBitrixSyncService {
         log.info("Syncing {} geo data records to Bitrix24", geoDataList.size());
         
         try {
-            // Группируем данные по странам для аналитики
+            
             Map<String, Long> countryStats = geoDataList.stream()
                     .collect(Collectors.groupingBy(
                             GeoLocationData::getCountry,
                             Collectors.summingLong(data -> data.getClickCount().longValue())
                     ));
             
-            // Группируем по кампаниям
             Map<Long, List<GeoLocationData>> byCampaign = geoDataList.stream()
                     .filter(data -> data.getCampaignId() != null)
                     .collect(Collectors.groupingBy(GeoLocationData::getCampaignId));
             
-            // Создаем сводный отчет
             String report = createGeoReport(geoDataList, countryStats, byCampaign);
             
-            // Отправляем в Bitrix24
             String title = "Геолокационный отчет - " + LocalDateTime.now();
             Map<String, Object> params = new HashMap<>();
             params.put("fields[TITLE]", title);
@@ -69,14 +60,11 @@ public class GeoBitrixSyncService {
             
         } catch (ResourceException e) {
             log.error("Error syncing geo data to Bitrix24", e);
-            // В случае ошибки возвращаем данные обратно в хранилище
+            
             geoDataList.forEach(data -> geoLocationStorage.addOrUpdateGeoData(data.getIp(), data));
         }
     }
     
-    /**
-     * Создает отчет по геоданным
-     */
     private String createGeoReport(List<GeoLocationData> geoDataList, 
                                    Map<String, Long> countryStats,
                                    Map<Long, List<GeoLocationData>> byCampaign) {
@@ -110,7 +98,7 @@ public class GeoBitrixSyncService {
         });
         
         report.append("\n=== ДЕТАЛЬНАЯ ИНФОРМАЦИЯ ===\n");
-        // Добавляем первые 10 записей для примера
+        
         geoDataList.stream().limit(10).forEach(data -> {
             report.append(String.format("\nIP: %s\n", data.getIp()));
             report.append(String.format("Страна: %s (%s)\n", data.getCountry(), data.getCountryCode()));

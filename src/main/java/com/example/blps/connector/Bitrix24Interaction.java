@@ -30,10 +30,6 @@ import com.example.blps.connector.record.BitrixMappedRecord;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Реализация взаимодействия для Битрикс24 коннектора.
- * Выполняет HTTP запросы к API Битрикс24.
- */
 @Slf4j
 public class Bitrix24Interaction implements Interaction {
 
@@ -46,9 +42,6 @@ public class Bitrix24Interaction implements Interaction {
         this.connection = null;
     }
 
-    /**
-     * Создает взаимодействие с указанным соединением.
-     */
     public Bitrix24Interaction(Connection connection) {
         this.httpClient = HttpClients.createDefault();
         this.connection = connection;
@@ -73,25 +66,22 @@ public class Bitrix24Interaction implements Interaction {
         BitrixMappedRecord outputRecord = (BitrixMappedRecord) output;
 
         try {
-            // Формируем URL для запроса
+            
             String url = spec.getWebhookUrl() + spec.getMethod();
             log.debug("Executing request to URL: {}", url);
 
-            // Создаем HTTP POST запрос
             HttpPost httpPost = new HttpPost(new URI(url));
 
-            // Добавляем параметры из входной записи
             List<NameValuePair> params = convertMapToNameValuePairs(inputRecord.getParameters());
             httpPost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
 
-            // Выполняем запрос
             CloseableHttpResponse response = httpClient.execute(httpPost);
 
             try {
-                // Обрабатываем ответ
+                
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode >= 400) {
-                    // Добавляем предупреждение о неуспешном статусе
+                    
                     addWarning("HTTP status code: " + statusCode);
                 }
 
@@ -151,20 +141,11 @@ public class Bitrix24Interaction implements Interaction {
         warnings = null;
     }
 
-    /**
-     * Добавляет предупреждение в цепочку предупреждений.
-     *
-     * @param message сообщение предупреждения
-     */
     private void addWarning(String message) {
-        // В реальной реализации здесь был бы код создания и добавления ResourceWarning,
-        // но для простоты мы просто логируем предупреждение
+        
         log.warn("Interaction warning: {}", message);
     }
 
-    /**
-     * Преобразует Map в список пар ключ-значение для HTTP запроса
-     */
     private List<NameValuePair> convertMapToNameValuePairs(Map<String, Object> map) {
         List<NameValuePair> result = new ArrayList<>();
         for (Map.Entry<String, Object> entry : map.entrySet()) {

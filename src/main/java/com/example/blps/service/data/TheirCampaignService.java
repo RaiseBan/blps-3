@@ -1,4 +1,4 @@
-package com.example.blps.service.data;// TheirCampaignService.java
+package com.example.blps.service.data;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -95,32 +95,29 @@ public class TheirCampaignService {
     }
     
     public List<TheirCampaign> importFromFile(MultipartFile file) {
-        // Определение транзакции с использованием JTA
+        
         DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
         definition.setName("importFromFileTransaction");
         definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         
-        // Начало транзакции через Atomikos JTA менеджер
         TransactionStatus status = transactionManager.getTransaction(definition);
         
         List<TheirCampaign> importedCampaigns = new ArrayList<>();
         
         try {
-            // Этап загрузки файла и парсинг
+            
             List<TheirCampaignRequest> campaignRequests = parseCsvFile(file);
             
-            // Этап валидации данных и сохранения
             for (TheirCampaignRequest request : campaignRequests) {
                 validateDates(request);
                 TheirCampaign campaign = createCampaign(request);
                 importedCampaigns.add(campaign);
             }
             
-            // Коммит транзакции в случае успеха
             transactionManager.commit(status);
             return importedCampaigns;
         } catch (Exception e) {
-            // Откат транзакции в случае ошибки
+            
             transactionManager.rollback(status);
             throw new ValidationException("Ошибка при импорте файла: " + e.getMessage());
         }

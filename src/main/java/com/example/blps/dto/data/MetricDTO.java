@@ -1,4 +1,3 @@
-// MetricDTO.java
 package com.example.blps.dto.data;
 
 import lombok.Getter;

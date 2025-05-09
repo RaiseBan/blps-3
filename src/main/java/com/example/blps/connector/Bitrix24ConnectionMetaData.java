@@ -2,9 +2,6 @@ package com.example.blps.connector;
 
 import jakarta.resource.cci.ConnectionMetaData;
 
-/**
- * Метаданные соединения для Битрикс24 коннектора.
- */
 public class Bitrix24ConnectionMetaData implements ConnectionMetaData {
 
     @Override

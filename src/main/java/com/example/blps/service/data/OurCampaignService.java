@@ -51,12 +51,11 @@ public class OurCampaignService {
     }
 
     public OurCampaignDTO createCampaign(OurCampaignRequest request) {
-        // Определение транзакции с использованием JTA
+        
         DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
         definition.setName("createCampaignTransaction");
         definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        // Начало транзакции через Atomikos JTA менеджер
         TransactionStatus status = transactionManager.getTransaction(definition);
 
         try {
@@ -66,7 +65,6 @@ public class OurCampaignService {
 
             OurCampaign newCampaign = campaignMapper.toEntity(request);
 
-            // Генерируем реферальную ссылку
             String referralLink = generateReferralLink(newCampaign);
             newCampaign.setReferralLink(referralLink);
 
@@ -74,15 +72,13 @@ public class OurCampaignService {
 
             OurCampaign savedCampaign = ourCampaignRepository.save(newCampaign);
 
-            // Коммит транзакции
             transactionManager.commit(status);
 
-            // Отправка уведомления о создании кампании
             sendCampaignCreatedNotification(savedCampaign);
 
             return campaignMapper.toDTO(savedCampaign);
         } catch (Exception e) {
-            // Откат транзакции в случае ошибки
+            
             transactionManager.rollback(status);
             log.error("Ошибка при создании кампании: {}", e.getMessage());
             throw e;
@@ -90,24 +86,21 @@ public class OurCampaignService {
     }
 
     public OurCampaignDTO updateCampaign(Long id, OurCampaignRequest request) {
-        // Определение транзакции с использованием JTA
+        
         DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
         definition.setName("updateCampaignTransaction");
         definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        // Начало транзакции через Atomikos JTA менеджер
         TransactionStatus status = transactionManager.getTransaction(definition);
 
         try {
             OurCampaign existingCampaign = ourCampaignRepository.findById(id)
                     .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
-            // Проверяем, изменилось ли имя кампании
             boolean isNameChanged = !existingCampaign.getCampaignName().equals(request.getCampaignName());
 
             updateCampaignFields(existingCampaign, request);
 
-            // Если имя кампании изменилось, генерируем новую реферальную ссылку
             if (isNameChanged) {
                 String newReferralLink = generateReferralLink(existingCampaign);
                 existingCampaign.setReferralLink(newReferralLink);
@@ -115,15 +108,13 @@ public class OurCampaignService {
 
             OurCampaign updatedCampaign = ourCampaignRepository.save(existingCampaign);
 
-            // Коммит транзакции
             transactionManager.commit(status);
 
-            // Отправка уведомления об обновлении кампании
             sendCampaignUpdatedNotification(updatedCampaign);
 
             return campaignMapper.toDTO(updatedCampaign);
         } catch (Exception e) {
-            // Откат транзакции в случае ошибки
+            
             transactionManager.rollback(status);
             log.error("Ошибка при обновлении кампании: {}", e.getMessage());
             throw e;
@@ -131,30 +122,26 @@ public class OurCampaignService {
     }
 
     public void deleteCampaign(Long id) {
-        // Определение транзакции с использованием JTA
+        
         DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
         definition.setName("deleteCampaignTransaction");
         definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        // Начало транзакции через Atomikos JTA менеджер
         TransactionStatus status = transactionManager.getTransaction(definition);
 
         try {
             OurCampaign campaign = ourCampaignRepository.findById(id)
                     .orElseThrow(() -> new NotFoundException("Campaign not found"));
 
-            // Сохраняем имя кампании для использования в уведомлении
             String campaignName = campaign.getCampaignName();
 
             ourCampaignRepository.delete(campaign);
 
-            // Коммит транзакции
             transactionManager.commit(status);
 
-            // Отправка уведомления об удалении кампании
             sendCampaignDeletedNotification(id, campaignName);
         } catch (Exception e) {
-            // Откат транзакции в случае ошибки
+            
             transactionManager.rollback(status);
             log.error("Ошибка при удалении кампании: {}", e.getMessage());
             throw e;
@@ -179,28 +166,22 @@ public class OurCampaignService {
         existing.setPlacementUrl(request.getPlacementUrl());
     }
 
-    /**
-     * Генерирует уникальную реферальную ссылку для кампании
-     */
     public String generateReferralLink(OurCampaign campaign) {
         try {
             String base = campaign.getCampaignName() + Instant.now().toEpochMilli();
             String hash = Hashing.sha256()
                     .hashString(base, StandardCharsets.UTF_8)
                     .toString();
-            // Возвращаем хэш без полного URL
+            
             return hash.substring(0, 12);
         } catch (Exception e) {
             throw new RuntimeException("Error generating referral link", e);
         }
     }
 
-    /**
-     * Отправляет уведомление о создании кампании
-     */
     private void sendCampaignCreatedNotification(OurCampaign campaign) {
         try {
-            // Получаем информацию о текущем пользователе
+            
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth != null ? auth.getName() : "system";
 
@@ -224,17 +205,14 @@ public class OurCampaignService {
 
             messageSenderService.sendNotification(notification);
         } catch (Exception e) {
-            // Логируем ошибку, но не прерываем основной поток выполнения
+            
             log.error("Ошибка при отправке уведомления о создании кампании: {}", e.getMessage());
         }
     }
 
-    /**
-     * Отправляет уведомление об обновлении кампании
-     */
     private void sendCampaignUpdatedNotification(OurCampaign campaign) {
         try {
-            // Получаем информацию о текущем пользователе
+            
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth != null ? auth.getName() : "system";
 
@@ -256,17 +234,14 @@ public class OurCampaignService {
 
             messageSenderService.sendNotification(notification);
         } catch (Exception e) {
-            // Логируем ошибку, но не прерываем основной поток выполнения
+            
             log.error("Ошибка при отправке уведомления об обновлении кампании: {}", e.getMessage());
         }
     }
 
-    /**
-     * Отправляет уведомление об удалении кампании
-     */
     private void sendCampaignDeletedNotification(Long campaignId, String campaignName) {
         try {
-            // Получаем информацию о текущем пользователе
+            
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth != null ? auth.getName() : "system";
 
@@ -287,7 +262,7 @@ public class OurCampaignService {
 
             messageSenderService.sendNotification(notification);
         } catch (Exception e) {
-            // Логируем ошибку, но не прерываем основной поток выполнения
+            
             log.error("Ошибка при отправке уведомления об удалении кампании: {}", e.getMessage());
         }
     }

@@ -18,18 +18,14 @@ public class BillingProcessingService {
     
     public static final String BILLING_PROCESSING_QUEUE = "billing.processing.queue";
     
-    /**
-     * Асинхронно обрабатывает запрос на генерацию счета
-     */
     @JmsListener(destination = BILLING_PROCESSING_QUEUE)
     public void processBillingRequest(BillingRequest request) {
         log.info("Processing billing request for campaign: {}", request.getCampaignId());
         
         try {
-            // Рассчитываем биллинг
+            
             BillingData billingData = billingCalculationService.calculateBilling(request);
             
-            // Отправляем в Bitrix24
             sendToBitrix24(billingData);
             
             log.info("Billing processed successfully for campaign: {}", request.getCampaignId());
@@ -38,14 +34,10 @@ public class BillingProcessingService {
         }
     }
     
-    /**
-     * Отправляет счет в Bitrix24
-     */
     private void sendToBitrix24(BillingData billingData) {
         try {
             String invoiceData = createBitrix24Invoice(billingData);
             
-            // Создаем счет в Bitrix24 CRM
             java.util.Map<String, Object> params = new java.util.HashMap<>();
             params.put("entityTypeId", "31");
             params.put("fields[TITLE]", "Счет: " + billingData.getCampaignName());
@@ -65,9 +57,6 @@ public class BillingProcessingService {
         }
     }
     
-    /**
-     * Формирует данные счета для Bitrix24
-     */
     private String createBitrix24Invoice(BillingData billingData) {
         StringBuilder invoice = new StringBuilder();
         

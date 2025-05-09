@@ -1,4 +1,4 @@
-package com.example.blps.dto.data;// OurCampaignRequest.java (для входящих данных)
+package com.example.blps.dto.data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -15,7 +15,6 @@ public class OurCampaignRequest {
     
     @PositiveOrZero
     private BigDecimal budget;
-
 
     @Pattern(
             regexp = "^(https?|ftp)://[A-Za-z0-9.-]+\\.[A-Za-z]{2,}.*$",

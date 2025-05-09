@@ -6,14 +6,12 @@ import org.hibernate.engine.transaction.jta.platform.internal.AbstractJtaPlatfor
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-
-@Component // Добавляем аннотацию компонента
+@Component 
 public class AtomikosJtaPlatform extends AbstractJtaPlatform {
 
     private final UserTransaction userTransaction;
     private final TransactionManager transactionManager;
 
-    // Внедряем зависимости через конструктор
     @Autowired
     public AtomikosJtaPlatform(
             UserTransaction userTransaction,

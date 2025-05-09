@@ -15,7 +15,7 @@ import java.util.Map;
 public class ChartData implements Serializable {
     private static final long serialVersionUID = 1L;
     
-    private String chartType; // line, bar, pie, etc.
+    private String chartType; 
     private String title;
     private String xAxisLabel;
     private String yAxisLabel;

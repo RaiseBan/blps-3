@@ -33,7 +33,6 @@ public abstract class BaseDashboardService {
             
             processedMessages.add(messageId);
             
-            // Очистка старых сообщений
             if (processedMessages.size() > 1000) {
                 processedMessages.clear();
             }
