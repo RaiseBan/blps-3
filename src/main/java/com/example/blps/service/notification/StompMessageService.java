@@ -1,5 +1,7 @@
 package com.example.blps.service.notification;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.transport.stomp.StompConnection;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +33,10 @@ public class StompMessageService {
     @Value("${spring.activemq.password}")
     private String password;
 
-    public StompMessageService(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public StompMessageService() {
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     @PostConstruct

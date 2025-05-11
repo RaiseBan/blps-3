@@ -21,29 +21,41 @@ public class GeoLocationService {
         try {
             log.debug("Fetching geo data for IP: {}", ip);
 
+            if (ip.equals("127.0.0.1") || ip.equals("localhost")) {
+                ip = "0:0:0:0:0:0:0:1";
+                log.info("Replaced localhost IP with IPv6 format: {}", ip);
+            }
+
             String url = IP_WHO_API_URL + ip;
             IpWhoResponse response = restTemplate.getForObject(url, IpWhoResponse.class);
 
-            if (response != null && response.isSuccess()) {
-                return GeoLocationData.builder()
-                        .ip(ip)
-                        .country(response.getCountry())
-                        .countryCode(response.getCountryCode())
-                        .region(response.getRegion())
-                        .regionCode(response.getRegionCode())
-                        .city(response.getCity())
-                        .latitude(response.getLatitude())
-                        .longitude(response.getLongitude())
-                        .continent(response.getContinent())
-                        .continentCode(response.getContinentCode())
-                        .timezone(response.getTimezone() != null ? response.getTimezone().getId() : null)
-                        .timestamp(LocalDateTime.now())
-                        .referralHash(referralHash)
-                        .campaignId(campaignId)
-                        .clickCount(1)
-                        .build();
+            if (response != null) {
+                log.info("Got response from IP service: {}", response);
+
+                if (response.isSuccess()) {
+                    return GeoLocationData.builder()
+                            .ip(ip)
+                            .country(response.getCountry())
+                            .countryCode(response.getCountryCode())
+                            .region(response.getRegion())
+                            .regionCode(response.getRegionCode())
+                            .city(response.getCity())
+                            .latitude(response.getLatitude())
+                            .longitude(response.getLongitude())
+                            .continent(response.getContinent())
+                            .continentCode(response.getContinentCode())
+                            .timezone(response.getTimezone() != null ? response.getTimezone().getId() : null)
+                            .timestamp(LocalDateTime.now())
+                            .referralHash(referralHash)
+                            .campaignId(campaignId)
+                            .clickCount(1)
+                            .build();
+                } else {
+                    log.error("API returned unsuccessful response for IP: {}. Response: {}", ip, response);
+                    return createDefaultGeoData(ip, referralHash, campaignId);
+                }
             } else {
-                log.error("Failed to get geo data for IP: {}. API response was not successful.", ip);
+                log.error("No response from IP service for IP: {}", ip);
                 return createDefaultGeoData(ip, referralHash, campaignId);
             }
         } catch (Exception e) {
